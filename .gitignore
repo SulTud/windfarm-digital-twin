@@ -1,0 +1,64 @@
+# ============================================================
+#  Unity .gitignore (Unity 6 / URP)
+# ============================================================
+
+# Unity tarafından otomatik üretilen klasörler
+/[Ll]ibrary/
+/[Tt]emp/
+/[Oo]bj/
+/[Bb]uild/
+/[Bb]uilds/
+/[Ll]ogs/
+/[Uu]ser[Ss]ettings/
+/[Mm]emoryCaptures/
+/[Rr]ecordings/
+
+# Asset Store araçları
+/[Aa]ssets/AssetStoreTools*
+
+# Addressables / Burst / Crashlytics artıkları
+/[Aa]ssets/[Aa]ddressable[Aa]ssets[Dd]ata/*/*.bin*
+/[Aa]ssets/[Ss]treamingAssets/aa.meta
+/[Aa]ssets/[Ss]treamingAssets/aa/*
+*_BurstDebugInformation_DoNotShip/
+crashlytics-build.properties
+
+# IDE / proje dosyaları (Unity tarafından yeniden üretilir)
+.vs/
+.idea/
+.gradle/
+ExportedObj/
+.consulo/
+*.csproj
+*.unityproj
+*.sln
+*.slnx
+*.suo
+*.tmp
+*.user
+*.userprefs
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+
+# Hata ayıklama sembolleri
+*.pdb.meta
+*.mdb.meta
+
+# Build çıktıları
+*.apk
+*.aab
+*.unitypackage
+*.app
+
+# Otomatik üretilen boot config
+sysinfo.txt
+
+# İşletim sistemi artıkları
+.DS_Store
+Thumbs.db
+Desktop.ini
