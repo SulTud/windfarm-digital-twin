@@ -62,3 +62,6 @@ sysinfo.txt
 .DS_Store
 Thumbs.db
 Desktop.ini
+
+# Yerel AI asistan ayarları
+.claude/settings.local.json
