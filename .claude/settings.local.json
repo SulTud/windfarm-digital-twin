@@ -1,8 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "PowerShell(Get-Process Unity -ErrorAction SilentlyContinue)",
-      "PowerShell(Get-Command dotnet -ErrorAction SilentlyContinue)"
-    ]
-  }
-}
