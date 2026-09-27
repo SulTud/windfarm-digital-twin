@@ -1,29 +1,29 @@
 namespace WindFarm.Simulation
 {
     /// <summary>
-    /// Tek bir örnekleme anındaki sensör okumalarının değişmez (immutable) anlık görüntüsü.
-    /// Struct olduğu için event ile yayınlanırken heap tahsisi (GC) oluşturmaz.
+    /// Immutable snapshot of all sensor readings at a single sampling instant.
+    /// Being a struct, publishing it through an event causes no heap allocation (no GC pressure).
     /// </summary>
     public readonly struct TurbineTelemetry
     {
         public readonly string TurbineId;
 
-        /// <summary>Simülasyon başlangıcından beri geçen süre (s).</summary>
+        /// <summary>Time elapsed since the simulation started (s).</summary>
         public readonly double SimulationTime;
 
-        /// <summary>Nasel anemometresi okuması (m/s).</summary>
+        /// <summary>Nacelle anemometer reading (m/s).</summary>
         public readonly float WindSpeed;
 
-        /// <summary>Ana şaft (rotor) devri (RPM).</summary>
+        /// <summary>Main shaft (rotor) speed (RPM).</summary>
         public readonly float RotorRpm;
 
-        /// <summary>Jeneratör sargı sıcaklığı (°C).</summary>
+        /// <summary>Generator winding temperature (°C).</summary>
         public readonly float GeneratorTemperature;
 
-        /// <summary>Şebekeye verilen anlık elektrik gücü (MW).</summary>
+        /// <summary>Instantaneous electrical power delivered to the grid (MW).</summary>
         public readonly float PowerOutputMW;
 
-        /// <summary>Simülasyon boyunca üretilen toplam enerji (MWh).</summary>
+        /// <summary>Total energy produced over the simulation (MWh).</summary>
         public readonly double TotalEnergyMWh;
 
         public readonly TurbineOperatingState State;

@@ -4,12 +4,12 @@ using UnityEngine;
 namespace WindFarm.Simulation
 {
     /// <summary>
-    /// Jeneratörü tek kütleli termal sistem (lumped thermal model) olarak modeller.
+    /// Models the generator as a single-mass (lumped) thermal system.
     ///
-    /// Denge sıcaklığı kayıplardan gelir:
-    ///   T_denge = T_ortam + ΔT_sürtünme · (RPM / RPM_nominal) + ΔT_yük · (P / P_nominal)²
-    /// Yük terimi kareseldir çünkü bakır kayıpları akımın karesiyle (I²R) orantılıdır.
-    /// Gerçek sıcaklık dengeye termal zaman sabitiyle yavaşça yaklaşır; güç düştüğünde de yavaşça soğur.
+    /// The equilibrium temperature comes from the losses:
+    ///   T_eq = T_ambient + ΔT_friction · (RPM / RPM_rated) + ΔT_load · (P / P_rated)²
+    /// The load term is quadratic because copper losses scale with the square of the current (I²R).
+    /// The actual temperature approaches equilibrium slowly with the thermal time constant, and cools down slowly when power drops.
     /// </summary>
     public sealed class ThermalModel
     {

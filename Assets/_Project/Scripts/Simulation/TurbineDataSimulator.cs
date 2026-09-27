@@ -5,18 +5,18 @@ using Random = System.Random;
 namespace WindFarm.Simulation
 {
     /// <summary>
-    /// Tek bir rüzgar türbininin mock sensör verisini üreten orkestratör.
+    /// Orchestrator that produces mock sensor data for a single wind turbine.
     ///
-    /// Nedensellik zinciri (her fizik adımında bu sırayla):
-    ///   Rüzgar → Kontrolcü (durum) → Rotor RPM (atalet gecikmesi) → Güç (k·ω³) → Jeneratör sıcaklığı (termal gecikme)
+    /// Causal chain (in this order on every physics step):
+    ///   Wind → Controller (state) → Rotor RPM (inertia lag) → Power (k·ω³) → Generator temperature (thermal lag)
     ///
-    /// Fizik sabit adımla (fixed timestep) ilerler, böylece sonuçlar kare hızından (FPS) bağımsızdır.
-    /// Telemetri ise ayrı ve daha düşük bir örnekleme frekansıyla yayınlanır — gerçek bir SCADA gibi.
+    /// Physics advances with a fixed timestep, so results are independent of the frame rate (FPS).
+    /// Telemetry is published at a separate, lower sampling rate — just like a real SCADA system.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class TurbineDataSimulator : MonoBehaviour, ITurbineTelemetrySource
     {
-        // Sekme arka plandayken (WebGL) biriken dev deltaTime'ın tek karede yüzlerce adım koşturmasını engeller.
+        // Prevents a huge accumulated deltaTime (e.g. WebGL tab in background) from running hundreds of steps in one frame.
         private const float MaxFrameDeltaTime = 0.25f;
 
         [SerializeField] private string turbineId = "WTG-01";
@@ -25,19 +25,19 @@ namespace WindFarm.Simulation
         [SerializeField] private SensorNoiseProfile sensorNoise = new SensorNoiseProfile();
 
         [Header("Simulation")]
-        [SerializeField, Min(0.005f), Tooltip("Fizik entegrasyon adımı (s).")]
+        [SerializeField, Min(0.005f), Tooltip("Physics integration step (s).")]
         private float physicsTimeStep = 0.05f;
 
-        [SerializeField, Min(0.02f), Tooltip("Telemetri yayın periyodu (s, gerçek zaman).")]
+        [SerializeField, Min(0.02f), Tooltip("Telemetry publish period (s, real time).")]
         private float publishInterval = 0.2f;
 
-        [SerializeField, Range(0.1f, 20f), Tooltip("Simülasyon zamanı çarpanı. Demo sırasında süreçleri hızlandırmak için.")]
+        [SerializeField, Range(0.1f, 20f), Tooltip("Simulation time multiplier. Speeds up the processes during a demo.")]
         private float simulationSpeed = 1f;
 
-        [SerializeField, Min(0f), Tooltip("Başlangıçta sessizce koşturulacak süre (s); veriler 'soğuk' değil dengede başlar.")]
+        [SerializeField, Min(0f), Tooltip("Time silently simulated at startup (s) so data starts at equilibrium instead of 'cold'.")]
         private float prewarmSeconds = 60f;
 
-        [SerializeField, Tooltip("0 = her çalıştırmada farklı. Sabit değer = tekrarlanabilir veri (test / sunum için).")]
+        [SerializeField, Tooltip("0 = different on every run. A fixed value gives reproducible data (for tests / presentations).")]
         private int randomSeed;
 
         private WindModel wind;
@@ -68,8 +68,8 @@ namespace WindFarm.Simulation
         }
 
         /// <summary>
-        /// Sahanın uzun dönem ortalama rüzgarını çalışma anında değiştirir (ör. UI slider, "fırtına senaryosu").
-        /// Değişim anlık değildir: rüzgar, rotor ve sıcaklık kendi dinamikleriyle yeni duruma yakınsar.
+        /// Changes the site's long-term mean wind at runtime (e.g. UI slider, "storm scenario").
+        /// The change is not instant: wind, rotor and temperature converge to the new state with their own dynamics.
         /// </summary>
         public void SetMeanWindSpeed(float metersPerSecond) =>
             windConditions.MeanWindSpeed = Mathf.Max(0f, metersPerSecond);
@@ -83,7 +83,7 @@ namespace WindFarm.Simulation
 
         private void Start()
         {
-            // Awake'te abone olamayan UI'lar için ilk okumayı yayınla.
+            // Publish the first reading for UIs that could not subscribe before Awake.
             TelemetryUpdated?.Invoke(LatestTelemetry);
         }
 
@@ -111,7 +111,7 @@ namespace WindFarm.Simulation
             int seed = randomSeed != 0 ? randomSeed : Environment.TickCount ^ GetInstanceID();
             var masterRandom = new Random(seed);
 
-            // Her alt sistemin kendi rastgele akışı var: birine parametre eklemek diğerlerinin dizisini kaydırmaz.
+            // Each subsystem has its own random stream: adding a parameter to one does not shift the sequence of the others.
             wind = new WindModel(windConditions, new Random(masterRandom.Next()));
             sensorRandom = new Random(masterRandom.Next());
             controller = new TurbineController(specs);
@@ -151,12 +151,12 @@ namespace WindFarm.Simulation
             TelemetryUpdated?.Invoke(LatestTelemetry);
         }
 
-        /// <summary>Fizik durumunu okuyup üzerine ölçüm gürültüsü ekler. Fizik durumunu değiştirmez.</summary>
+        /// <summary>Reads the physics state and adds measurement noise on top. Does not modify the physics state.</summary>
         private TurbineTelemetry SampleSensors()
         {
             float measuredWind = Mathf.Max(0f, wind.CurrentSpeed + sensorRandom.NextGaussian(sensorNoise.WindSpeedStdDev));
 
-            // Duran rotorda enkoder / güç ölçer sıfır okur; gürültüyü yalnızca hareket varken ekle.
+            // A stationary rotor reads zero on the encoder / power meter; only add noise while there is motion.
             float measuredRpm = rotor.Rpm > 0.05f
                 ? Mathf.Max(0f, rotor.Rpm + sensorRandom.NextGaussian(sensorNoise.RotorRpmStdDev))
                 : 0f;

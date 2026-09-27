@@ -4,22 +4,22 @@ using UnityEngine;
 namespace WindFarm.Simulation
 {
     /// <summary>
-    /// Sensör ölçüm gürültüsünün standart sapmaları. Gürültü yalnızca yayınlanan okumaya eklenir,
-    /// fizik durumunu (state) bozmaz — gerçek bir sensör de süreci değil, ölçümü gürültülü yapar.
+    /// Standard deviations of sensor measurement noise. Noise is added only to the published reading and never
+    /// corrupts the physics state — a real sensor makes the measurement noisy, not the process itself.
     /// </summary>
     [Serializable]
     public sealed class SensorNoiseProfile
     {
-        [field: SerializeField, Min(0f), Tooltip("Anemometre gürültüsü σ (m/s).")]
+        [field: SerializeField, Min(0f), Tooltip("Anemometer noise σ (m/s).")]
         public float WindSpeedStdDev { get; private set; } = 0.15f;
 
-        [field: SerializeField, Min(0f), Tooltip("Enkoder gürültüsü σ (RPM).")]
+        [field: SerializeField, Min(0f), Tooltip("Encoder noise σ (RPM).")]
         public float RotorRpmStdDev { get; private set; } = 0.04f;
 
-        [field: SerializeField, Min(0f), Tooltip("PT100 sıcaklık sensörü gürültüsü σ (°C).")]
+        [field: SerializeField, Min(0f), Tooltip("PT100 temperature sensor noise σ (°C).")]
         public float TemperatureStdDev { get; private set; } = 0.1f;
 
-        [field: SerializeField, Range(0f, 0.05f), Tooltip("Güç ölçer gürültüsü σ, nominal gücün oranı olarak.")]
+        [field: SerializeField, Range(0f, 0.05f), Tooltip("Power meter noise σ as a fraction of rated power.")]
         public float PowerStdDevFraction { get; private set; } = 0.004f;
     }
 }

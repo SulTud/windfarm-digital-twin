@@ -4,15 +4,15 @@ using UnityEngine;
 namespace WindFarm.Simulation
 {
     /// <summary>
-    /// Elektrik gücünü rotor devrinden hesaplar (durumsuz / stateless).
+    /// Computes electrical power from rotor speed (stateless).
     ///
-    /// Kısmi yük bölgesinde gerçek türbinlerde kullanılan standart tork kontrol yasası uygulanır:
+    /// In the partial-load region the standard torque control law used by real turbines is applied:
     ///   T = k·ω²  →  P = k·ω³,   k = ½·ρ·π·R⁵·Cp_max / λ_opt³
-    /// Bu sayede güç rüzgarı değil rotoru takip eder: rotor yavaşça hızlanırken güç de onunla birlikte artar.
+    /// This way power follows the rotor rather than the wind: as the rotor slowly speeds up, power rises with it.
     ///
-    /// Fiziksel sınırlar:
-    /// - Rüzgardaki mevcut güç (½·ρ·A·Cp·v³) aşılamaz — rüzgar aniden düşerse güç de düşer.
-    /// - Nominal gücün üstüne çıkılamaz (pitch kontrolü fazlayı döker).
+    /// Physical limits:
+    /// - Power available in the wind (½·ρ·A·Cp·v³) cannot be exceeded — if the wind drops suddenly, power drops too.
+    /// - Rated power cannot be exceeded (pitch control sheds the excess).
     /// </summary>
     public sealed class PowerModel
     {

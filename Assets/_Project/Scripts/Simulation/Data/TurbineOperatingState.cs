@@ -1,20 +1,20 @@
 namespace WindFarm.Simulation
 {
     /// <summary>
-    /// Türbinin denetim sistemi (supervisory controller) tarafından belirlenen çalışma durumu.
+    /// Operating state of the turbine as decided by the supervisory controller.
     /// </summary>
     public enum TurbineOperatingState
     {
-        /// <summary>Rüzgar cut-in hızının altında; jeneratör şebekeden ayrık, rotor duruyor.</summary>
+        /// <summary>Wind below cut-in speed; generator disconnected from the grid, rotor at standstill.</summary>
         Idle,
 
-        /// <summary>Kısmi yük bölgesi; rotor rüzgarı optimum uç hız oranıyla takip ediyor.</summary>
+        /// <summary>Partial-load region; rotor tracks the wind at the optimal tip speed ratio.</summary>
         Producing,
 
-        /// <summary>Nominal güce ulaşıldı; kanat açısı (pitch) kontrolü gücü sabit tutuyor.</summary>
+        /// <summary>Rated power reached; blade pitch control holds power constant.</summary>
         RatedPower,
 
-        /// <summary>Rüzgar cut-out hızını aştı; kanatlar tüylendi (feather), rotor frenleniyor.</summary>
+        /// <summary>Wind above cut-out speed; blades feathered and rotor braking.</summary>
         StormShutdown
     }
 }

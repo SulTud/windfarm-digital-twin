@@ -4,16 +4,16 @@ using UnityEngine;
 namespace WindFarm.Simulation
 {
     /// <summary>
-    /// Rotor devrini birinci dereceden gecikme (first-order lag) ile modeller: rotor ağır bir kütledir,
-    /// rüzgar anında değişse bile devir hedefe üstel olarak, "yavaşça" yaklaşır.
+    /// Models rotor speed as a first-order lag: the rotor is a heavy mass, so even if the wind changes instantly
+    /// the speed approaches its target exponentially ("slowly").
     ///
-    /// Hedef devir, optimum uç hız oranından (λ = ωR / v) türetilir:
-    ///   RPM_hedef = λ_opt · v · 60 / (2πR), [MinRpm, RatedRpm] aralığına kırpılır.
-    /// Nominal devrin üstünde pitch kontrolü devri sabitler (kırpmanın fiziksel karşılığı).
+    /// The target speed is derived from the optimal tip speed ratio (λ = ωR / v):
+    ///   RPM_target = λ_opt · v · 60 / (2πR), clamped to [MinRpm, RatedRpm].
+    /// Above rated speed, pitch control holds the speed constant (the physical meaning of the clamp).
     /// </summary>
     public sealed class RotorModel
     {
-        private const float BrakingTimeConstantFactor = 0.6f; // mekanik fren + feather, serbest ivmelenmeden hızlı
+        private const float BrakingTimeConstantFactor = 0.6f; // mechanical brake + feathering is faster than free acceleration
 
         private readonly TurbineSpecs specs;
 

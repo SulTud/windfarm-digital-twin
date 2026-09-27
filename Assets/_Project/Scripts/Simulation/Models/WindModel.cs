@@ -5,11 +5,11 @@ using Random = System.Random;
 namespace WindFarm.Simulation
 {
     /// <summary>
-    /// Rüzgar hızını üç bileşenin toplamı olarak üretir:
-    ///   v(t) = [ortalama + yavaş salınım(t)] + türbülans(t) + gust(t)
-    /// - Yavaş salınım: Perlin gürültüsü (hava durumu ölçeğinde, dakikalar).
-    /// - Türbülans: Ornstein-Uhlenbeck süreci (ortalamaya dönen, zamanla ilişkili rastgelelik, saniyeler).
-    /// - Gust: Poisson zamanlı, IEC 61400-1 benzeri (1 - cos) profilli ani rüzgarlar.
+    /// Generates wind speed as the sum of three components:
+    ///   v(t) = [mean + slow drift(t)] + turbulence(t) + gust(t)
+    /// - Slow drift: Perlin noise (weather scale, minutes).
+    /// - Turbulence: Ornstein-Uhlenbeck process (mean-reverting, time-correlated randomness, seconds).
+    /// - Gust: Poisson-timed gusts with an IEC 61400-1 style (1 - cos) profile.
     /// </summary>
     public sealed class WindModel
     {
@@ -54,8 +54,8 @@ namespace WindFarm.Simulation
         }
 
         /// <summary>
-        /// OU sürecinin kesin (exact) ayrıklaştırması; her dt için kararlıdır.
-        /// Durağan standart sapma = TI × yerel ortalama, yani rüzgar sertleştikçe türbülans da büyür.
+        /// Exact discretization of the OU process; stable for any dt.
+        /// Stationary standard deviation = TI × local mean, so turbulence grows as the wind gets stronger.
         /// </summary>
         private void StepTurbulence(float deltaTime, float localMean)
         {

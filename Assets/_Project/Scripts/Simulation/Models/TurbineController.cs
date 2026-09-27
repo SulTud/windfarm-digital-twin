@@ -4,15 +4,15 @@ using UnityEngine;
 namespace WindFarm.Simulation
 {
     /// <summary>
-    /// Denetim kontrolcüsü: filtrelenmiş rüzgar hızına ve üretilen güce bakarak çalışma durumuna karar verir.
-    /// Anlık gürültüyle durumun titrememesi (chattering) için tüm geçişlerde histerezis kullanılır.
+    /// Supervisory controller: decides the operating state from the filtered wind speed and the produced power.
+    /// All transitions use hysteresis so the state does not chatter due to momentary noise.
     /// </summary>
     public sealed class TurbineController
     {
         private const float CutInHysteresis = 0.5f;          // m/s
         private const float RatedPowerEnterRatio = 0.99f;
         private const float RatedPowerExitRatio = 0.95f;
-        private const float GustCutOutFactor = 1.12f;        // anlık ~28 m/s gust'ta ortalamayı beklemeden dur
+        private const float GustCutOutFactor = 1.12f;        // stop immediately on a ~28 m/s gust without waiting for the average
 
         private readonly TurbineSpecs specs;
         private float averagedWindSpeed;
@@ -28,7 +28,7 @@ namespace WindFarm.Simulation
             this.specs = specs ?? throw new ArgumentNullException(nameof(specs));
         }
 
-        /// <returns>Durum bu adımda değiştiyse true.</returns>
+        /// <returns>True if the state changed during this step.</returns>
         public bool Step(float deltaTime, float windSpeed, float powerMW)
         {
             if (!initialized)

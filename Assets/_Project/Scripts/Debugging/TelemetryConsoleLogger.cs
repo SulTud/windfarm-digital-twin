@@ -4,12 +4,12 @@ using WindFarm.Simulation;
 namespace WindFarm.Debugging
 {
     /// <summary>
-    /// Simülatörü Console üzerinden doğrulamak için basit abone. UI scriptleri de aynı kalıbı izler:
-    /// OnEnable'da abone ol, OnDisable'da aboneliği bırak (sahne değişiminde sızıntı / null referans olmaz).
+    /// Simple subscriber for verifying the simulator through the Console. UI scripts follow the same pattern:
+    /// subscribe in OnEnable, unsubscribe in OnDisable (no leaks or null references on scene changes).
     /// </summary>
     public sealed class TelemetryConsoleLogger : MonoBehaviour
     {
-        // Unity arayüzleri serialize edemez; somut bileşeni alıp arayüz üzerinden kullanıyoruz.
+        // Unity cannot serialize interfaces; take the concrete component and use it through the interface.
         [SerializeField] private TurbineDataSimulator simulator;
         [SerializeField, Min(0.1f)] private float logInterval = 2f;
 
@@ -18,10 +18,10 @@ namespace WindFarm.Debugging
 
         private void OnEnable()
         {
-            // Unity'nin null kontrolü (destroyed / atanmamış obje) arayüz üzerinden değil, somut tip üzerinden yapılmalı.
+            // Unity's null check (destroyed / unassigned object) must be done on the concrete type, not through the interface.
             if (simulator == null)
             {
-                Debug.LogWarning($"{nameof(TelemetryConsoleLogger)}: simulator atanmamış.", this);
+                Debug.LogWarning($"{nameof(TelemetryConsoleLogger)}: simulator is not assigned.", this);
                 return;
             }
 
@@ -49,6 +49,6 @@ namespace WindFarm.Debugging
         }
 
         private void HandleStateChanged(TurbineOperatingState previous, TurbineOperatingState current) =>
-            Debug.Log($"[{source.TurbineId}] State: {previous} → {current}", this);
+            Debug.Log($"[{source.TurbineId}] State: {previous} -> {current}", this);
     }
 }

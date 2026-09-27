@@ -3,20 +3,20 @@ using System;
 namespace WindFarm.Simulation
 {
     /// <summary>
-    /// UI ve diğer tüketicilerin bağlandığı soyutlama. Bugün mock simülatör bu arayüzü uyguluyor;
-    /// yarın gerçek bir SCADA / MQTT / WebSocket kaynağı aynı arayüzle UI'a hiç dokunmadan takılabilir.
+    /// Abstraction that UI and other consumers bind to. Today the mock simulator implements it;
+    /// later a real SCADA / MQTT / WebSocket feed can implement the same interface without touching the UI.
     /// </summary>
     public interface ITurbineTelemetrySource
     {
         string TurbineId { get; }
 
-        /// <summary>En son yayınlanan okuma. Geç abone olan UI'lar ilk değeri buradan alabilir.</summary>
+        /// <summary>Most recently published reading. Late subscribers can read their initial value from here.</summary>
         TurbineTelemetry LatestTelemetry { get; }
 
-        /// <summary>Her örnekleme periyodunda yeni sensör okumasıyla tetiklenir.</summary>
+        /// <summary>Raised every sampling period with a new sensor reading.</summary>
         event Action<TurbineTelemetry> TelemetryUpdated;
 
-        /// <summary>Çalışma durumu değiştiğinde tetiklenir: (önceki, yeni).</summary>
+        /// <summary>Raised when the operating state changes: (previous, current).</summary>
         event Action<TurbineOperatingState, TurbineOperatingState> OperatingStateChanged;
     }
 }
