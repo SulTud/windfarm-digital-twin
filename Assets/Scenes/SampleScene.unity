@@ -468,7 +468,7 @@ MonoBehaviour:
     <RatedRotorRpm>k__BackingField: 14
     <OptimalTipSpeedRatio>k__BackingField: 7.5
     <MaxPowerCoefficient>k__BackingField: 0.45
-    <RotorTimeConstant>k__BackingField: 8
+    <RotorTimeConstant>k__BackingField: 7
     <RatedPowerMW>k__BackingField: 3
     <DrivetrainEfficiency>k__BackingField: 0.94
     <CutInWindSpeed>k__BackingField: 3
