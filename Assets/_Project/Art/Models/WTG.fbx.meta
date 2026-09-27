@@ -3,7 +3,37 @@ guid: 5a47e18a9c33a02499b836473ecd6ea2
 ModelImporter:
   serializedVersion: 24200
   internalIDToNameTable: []
-  externalObjects: {}
+  externalObjects:
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: CoolerMat
+    second: {fileID: 2100000, guid: 20a4eda09e5a4b3458621b9d4bc47ea9, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: M_BladeTip
+    second: {fileID: 2100000, guid: df85e7f63e6df9f43bec0acf20f91235, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: M_Body
+    second: {fileID: 2100000, guid: 33e95e47d6213eb4b9dacaaa296a59a2, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: M_DriveTrain
+    second: {fileID: 2100000, guid: 3321ee72e93c43942b545a54f45d0fa3, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: M_Generator
+    second: {fileID: 2100000, guid: 28ee1f0763307094790c56f1ca35cabf, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: M_Housing
+    second: {fileID: 2100000, guid: c7170bc9c7a5b1b438d348fd4fff2af7, type: 2}
   materials:
     materialImportMode: 2
     materialName: 0
