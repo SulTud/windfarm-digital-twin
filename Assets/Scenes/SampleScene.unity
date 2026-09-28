@@ -584,6 +584,11 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!23 &1226773817 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: -5853672700611418013, guid: 5a47e18a9c33a02499b836473ecd6ea2, type: 3}
+  m_PrefabInstance: {fileID: 350531012}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1248645717
 GameObject:
   m_ObjectHideFlags: 0
@@ -716,6 +721,11 @@ MonoBehaviour:
   glowStartTemperature: 70
   maxGlowIntensity: 1.5
   temperatureSmoothingTime: 1
+  housingRenderer: {fileID: 1226773817}
+  xRayMaterial: {fileID: 2100000, guid: 8886a8c3c2c32f24e9dc462ba20c7f25, type: 2}
+  xRayOpacity: 0.12
+  xRayFadeTime: 0.5
+  xRayEnabled: 0
 --- !u!1 &1365045597
 GameObject:
   m_ObjectHideFlags: 0

@@ -84,6 +84,23 @@ namespace WindFarm.Visuals
         [SerializeField, Min(0.01f), Tooltip("Smoothing time constant for the measured temperature (s).")]
         private float temperatureSmoothingTime = 1f;
 
+        [Header("X-Ray")]
+        [SerializeField, Tooltip("Nacelle housing renderer that fades out to reveal the drivetrain.")]
+        private Renderer housingRenderer;
+
+        [SerializeField, Tooltip("Transparent copy of the housing material (URP Lit, Surface Type = Transparent). " +
+                                 "Must be an asset so WebGL builds keep the transparent shader variant.")]
+        private Material xRayMaterial;
+
+        [SerializeField, Range(0f, 1f), Tooltip("Housing opacity while X-Ray is fully on.")]
+        private float xRayOpacity = 0.12f;
+
+        [SerializeField, Min(0.01f), Tooltip("Fade duration when X-Ray is toggled (s).")]
+        private float xRayFadeTime = 0.5f;
+
+        [SerializeField, Tooltip("Toggle in Play mode to test. The dashboard sets XRayEnabled later.")]
+        private bool xRayEnabled;
+
         private ITurbineTelemetrySource source;
         private TurbineTelemetry latest;
         private bool hasTelemetry;
@@ -97,6 +114,19 @@ namespace WindFarm.Visuals
         private float smoothedTemperature;
         private float spinAngle;
         private float currentPitch;
+
+        private Material housingOpaqueMaterial;
+        private Material xRayInstance;
+        private Color housingBaseColor;
+        private UnityEngine.Rendering.ShadowCastingMode housingShadowMode;
+        private float xRayBlend;
+
+        /// <summary>Fades the nacelle housing to transparent to reveal the drivetrain and the heat colors.</summary>
+        public bool XRayEnabled
+        {
+            get => xRayEnabled;
+            set => xRayEnabled = value;
+        }
 
         private void Awake()
         {
@@ -116,6 +146,14 @@ namespace WindFarm.Visuals
             {
                 if (heatRenderers[i] != null)
                     heatMaterials[i] = heatRenderers[i].material;
+            }
+
+            if (housingRenderer != null && xRayMaterial != null)
+            {
+                housingOpaqueMaterial = housingRenderer.sharedMaterial;
+                housingShadowMode = housingRenderer.shadowCastingMode;
+                xRayInstance = new Material(xRayMaterial);
+                housingBaseColor = xRayMaterial.GetColor(BaseColorId);
             }
         }
 
@@ -148,6 +186,9 @@ namespace WindFarm.Visuals
 
         private void OnDestroy()
         {
+            if (xRayInstance != null)
+                Destroy(xRayInstance);
+
             if (heatMaterials == null)
                 return;
 
@@ -175,10 +216,13 @@ namespace WindFarm.Visuals
 
         private void Update()
         {
+            float deltaTime = Time.deltaTime;
+
+            // X-Ray is a view setting, independent of telemetry.
+            UpdateXRay(deltaTime);
+
             if (!hasTelemetry)
                 return;
-
-            float deltaTime = Time.deltaTime;
 
             smoothedRpm = Smooth(smoothedRpm, latest.RotorRpm, rpmSmoothingTime, deltaTime);
             smoothedWindSpeed = Smooth(smoothedWindSpeed, latest.WindSpeed, windSmoothingTime, deltaTime);
@@ -253,6 +297,38 @@ namespace WindFarm.Visuals
             }
         }
 
+        /// <remarks>
+        /// Swaps between two material assets instead of switching one material to transparent at runtime:
+        /// WebGL builds strip shader variants that no material asset uses, so a runtime switch would silently fail there.
+        /// </remarks>
+        private void UpdateXRay(float deltaTime)
+        {
+            if (xRayInstance == null)
+                return;
+
+            float target = xRayEnabled ? 1f : 0f;
+            if (Mathf.Approximately(xRayBlend, target))
+                return;
+
+            xRayBlend = Mathf.MoveTowards(xRayBlend, target, deltaTime / xRayFadeTime);
+
+            if (xRayBlend <= 0f)
+            {
+                // Fully opaque again: back to the original material (writes depth, casts shadows).
+                housingRenderer.sharedMaterial = housingOpaqueMaterial;
+                housingRenderer.shadowCastingMode = housingShadowMode;
+                return;
+            }
+
+            Color color = housingBaseColor;
+            color.a = Mathf.Lerp(1f, xRayOpacity, Mathf.SmoothStep(0f, 1f, xRayBlend));
+            xRayInstance.SetColor(BaseColorId, color);
+
+            housingRenderer.sharedMaterial = xRayInstance;
+            // A transparent housing still casts a full shadow and would darken the drivetrain inside.
+            housingRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        }
+
         /// <summary>Frame-rate independent exponential smoothing toward a moving target.</summary>
         private static float Smooth(float current, float target, float timeConstant, float deltaTime) =>
             current + (target - current) * (1f - Mathf.Exp(-deltaTime / timeConstant));
@@ -292,6 +368,9 @@ namespace WindFarm.Visuals
                 generator != null ? generator.GetComponent<Renderer>() : null,
                 cooler != null ? cooler.GetComponent<Renderer>() : null,
             };
+
+            Transform nacelle = FindChildRecursive(transform, "Nacelle");
+            housingRenderer = nacelle != null ? nacelle.GetComponent<Renderer>() : null;
         }
 
         private static Transform FindChildRecursive(Transform parent, string childName)
