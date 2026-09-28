@@ -1,0 +1,682 @@
+/*
+ * WTG-01 dashboard: dark control-room HUD over the 3D scene.
+ * Sizes are logical (CSS-like) pixels; ResponsivePanel scales the panel by the device pixel ratio.
+ * Layout variants come from classes on the root: .dashboard--landscape (PC), .dashboard--portrait (phone),
+ * .dashboard--short (low landscape screens). USS has no media queries.
+ * Selectors that restyle built-in controls (Button, Slider) are prefixed with .dashboard so they outrank the
+ * default runtime theme, including its :hover / :active states.
+ */
+
+:root {
+    --ground: #0D1820;
+    --panel: rgba(19, 35, 45, 0.82);
+    --panel-solid: #13232D;
+    --line: rgba(140, 162, 174, 0.18);
+    --line-strong: rgba(140, 162, 174, 0.34);
+    --ink: #E4EDF1;
+    --ink-2: #B7C7CF;
+    --muted: #8CA2AE;
+    --accent: #5CC6E0;
+    --accent-dim: rgba(92, 198, 224, 0.16);
+    --hover: rgba(140, 162, 174, 0.14);
+    --good: #45C08A;
+    --good-dim: rgba(69, 192, 138, 0.13);
+    --good-line: rgba(69, 192, 138, 0.40);
+    --warn: #F0B03C;
+    --warn-dim: rgba(240, 176, 60, 0.13);
+    --warn-line: rgba(240, 176, 60, 0.45);
+    --crit: #EF5A4B;
+    --crit-dim: rgba(239, 90, 75, 0.14);
+    --crit-line: rgba(239, 90, 75, 0.50);
+    --idle: #8CA2AE;
+    --idle-dim: rgba(140, 162, 174, 0.12);
+    --idle-line: rgba(140, 162, 174, 0.40);
+    --track: rgba(140, 162, 174, 0.22);
+}
+
+/* ---------- Fonts and base ---------- */
+
+.dashboard {
+    flex-grow: 1;
+    -unity-font-definition: url("Fonts/Barlow-Regular SDF.asset");
+    font-size: 14px;
+    color: var(--ink);
+}
+
+.unity-label {
+    margin: 0;
+    padding: 0;
+}
+
+.turbine-id,
+.pill__label,
+.card__label,
+.chip,
+.tab,
+.fab {
+    -unity-font-definition: url("Fonts/BarlowCondensed-SemiBold SDF.asset");
+}
+
+.turbine-id {
+    -unity-font-definition: url("Fonts/BarlowCondensed-Bold SDF.asset");
+}
+
+.value,
+.dock__value,
+.segmented__item {
+    -unity-font-definition: url("Fonts/IBMPlexMono-Medium SDF.asset");
+}
+
+.turbine-class,
+.unit,
+.card__aside,
+.meta-text,
+.source-badge,
+.wind-tick,
+.chart__placeholder {
+    -unity-font-definition: url("Fonts/IBMPlexMono-Regular SDF.asset");
+}
+
+/* ---------- Top bar ---------- */
+
+.top-bar {
+    flex-direction: row;
+    align-items: center;
+    height: 56px;
+    padding: 0 20px;
+    background-color: rgba(10, 19, 26, 0.78);
+    border-bottom-width: 1px;
+    border-color: var(--line);
+}
+
+.top-bar__brand {
+    flex-direction: row;
+    align-items: center;
+    flex-grow: 1;
+    flex-basis: 0;
+}
+
+.turbine-id {
+    font-size: 24px;
+    letter-spacing: 0.5px;
+    color: var(--ink);
+}
+
+.turbine-class {
+    font-size: 11px;
+    color: var(--muted);
+    margin-left: 10px;
+}
+
+.top-bar__status {
+    flex-direction: row;
+    align-items: center;
+    flex-shrink: 1;
+}
+
+.state-explanation {
+    font-size: 13px;
+    color: var(--ink-2);
+    margin-left: 12px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex-shrink: 1;
+}
+
+.top-bar__meta {
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-end;
+    flex-grow: 1;
+    flex-basis: 0;
+}
+
+.meta-text {
+    font-size: 12px;
+    color: var(--muted);
+}
+
+.source-badge {
+    font-size: 12px;
+    color: var(--ink-2);
+    margin-left: 14px;
+    padding: 2px 8px;
+    border-width: 1px;
+    border-color: var(--line-strong);
+    border-radius: 4px;
+}
+
+/* ---------- State pill and chip (semantic colors) ---------- */
+
+.pill {
+    flex-direction: row;
+    align-items: center;
+    padding: 4px 12px;
+    border-width: 1px;
+    border-radius: 999px;
+}
+
+.pill__dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 4px;
+    margin-right: 7px;
+}
+
+.pill__label {
+    font-size: 14px;
+    letter-spacing: 1px;
+}
+
+.chip {
+    font-size: 11px;
+    letter-spacing: 1px;
+    padding: 1px 7px;
+    border-width: 1px;
+    border-radius: 4px;
+}
+
+.pill--good, .chip--good { background-color: var(--good-dim); border-color: var(--good-line); }
+.pill--good .pill__label, .chip--good { color: var(--good); }
+.pill--good .pill__dot { background-color: var(--good); }
+
+.pill--rated, .chip--rated { background-color: var(--accent-dim); border-color: rgba(92, 198, 224, 0.45); }
+.pill--rated .pill__label, .chip--rated { color: var(--accent); }
+.pill--rated .pill__dot { background-color: var(--accent); }
+
+.pill--idle, .chip--idle { background-color: var(--idle-dim); border-color: var(--idle-line); }
+.pill--idle .pill__label, .chip--idle { color: var(--idle); }
+.pill--idle .pill__dot { background-color: var(--idle); }
+
+.pill--warn, .chip--warn { background-color: var(--warn-dim); border-color: var(--warn-line); }
+.pill--warn .pill__label, .chip--warn { color: var(--warn); }
+.pill--warn .pill__dot { background-color: var(--warn); }
+
+.pill--crit, .chip--crit { background-color: var(--crit-dim); border-color: var(--crit-line); }
+.pill--crit .pill__label, .chip--crit { color: var(--crit); }
+.pill--crit .pill__dot { background-color: var(--crit); }
+
+/* ---------- Body and columns ---------- */
+
+.body {
+    flex-grow: 1;
+    flex-direction: row;
+    justify-content: space-between;
+    padding: 16px;
+}
+
+/* Equal column widths keep the free space (and the dock in it) centered under the turbine. */
+.left-column {
+    width: 300px;
+}
+
+.right-column {
+    width: 300px;
+}
+
+/* On PC, DashboardLayout places the dock here, centered at the bottom between the columns. */
+.scene-space {
+    flex-grow: 1;
+    justify-content: flex-end;
+    margin: 0 16px;
+}
+
+.scene-actions {
+    display: none;
+}
+
+/* ---------- Cards ---------- */
+
+.card {
+    background-color: var(--panel);
+    border-width: 1px;
+    border-color: var(--line);
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-bottom: 10px;
+}
+
+.card__header {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.card__label {
+    font-size: 12px;
+    letter-spacing: 1.2px;
+    color: var(--muted);
+}
+
+.card__aside {
+    font-size: 11px;
+    color: var(--muted);
+    white-space: nowrap;
+}
+
+.card__aside--accent {
+    color: var(--accent);
+}
+
+.card__footer {
+    flex-direction: row;
+    justify-content: space-between;
+    margin-top: 6px;
+}
+
+.value-row {
+    flex-direction: row;
+    align-items: flex-end;
+    margin-top: 4px;
+}
+
+.value {
+    font-size: 28px;
+    color: var(--ink);
+    white-space: nowrap;
+}
+
+.value--hero {
+    font-size: 44px;
+}
+
+.unit {
+    font-size: 13px;
+    color: var(--muted);
+    margin-left: 5px;
+    margin-bottom: 5px;
+}
+
+.card--hero .unit {
+    margin-bottom: 8px;
+}
+
+.meter {
+    height: 6px;
+    margin-top: 8px;
+    border-radius: 3px;
+    background-color: var(--track);
+    overflow: hidden;
+}
+
+.meter__fill {
+    height: 100%;
+    width: 50%;
+    border-radius: 3px;
+    background-color: var(--accent);
+}
+
+/* Temperature scale: zone widths are set from the protection limits in code (flex-grow = degrees). */
+
+.temp-scale {
+    height: 12px;
+    margin-top: 8px;
+    justify-content: center;
+}
+
+.temp-scale__zones {
+    flex-direction: row;
+    height: 6px;
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.temp-scale__zone {
+    height: 100%;
+}
+
+.temp-scale__zone--normal { flex-grow: 140; background-color: rgba(69, 192, 138, 0.45); }
+.temp-scale__zone--warning { flex-grow: 10; background-color: var(--warn); }
+.temp-scale__zone--alarm { flex-grow: 5; background-color: rgba(239, 90, 75, 0.70); }
+.temp-scale__zone--trip { flex-grow: 15; background-color: var(--crit); }
+
+.temp-scale__marker {
+    position: absolute;
+    top: 0;
+    left: 26.6%;
+    width: 2px;
+    height: 12px;
+    margin-left: -1px;
+    border-radius: 1px;
+    background-color: var(--ink);
+}
+
+/* ---------- Charts (placeholders until the chart step) ---------- */
+
+.chart {
+    margin-top: 10px;
+    border-radius: 6px;
+    background-color: rgba(140, 162, 174, 0.06);
+    align-items: center;
+    justify-content: center;
+}
+
+.chart--trend {
+    height: 130px;
+}
+
+.chart--curve {
+    height: 160px;
+}
+
+.chart__placeholder {
+    font-size: 11px;
+    color: var(--muted);
+}
+
+/* ---------- Tabs, segmented buttons, floating buttons ---------- */
+
+.tabs {
+    flex-direction: row;
+}
+
+.dashboard .tab,
+.dashboard .segmented__item,
+.dashboard .fab {
+    margin: 0;
+    border-width: 0;
+    background-color: rgba(0, 0, 0, 0);
+    color: var(--muted);
+}
+
+.dashboard .tab {
+    font-size: 11px;
+    letter-spacing: 1px;
+    padding: 2px 9px;
+    margin-left: 2px;
+    border-radius: 999px;
+}
+
+.dashboard .segmented__item {
+    font-size: 12px;
+    padding: 4px 10px;
+    border-radius: 0;
+}
+
+.dashboard .fab {
+    width: 52px;
+    height: 44px;
+    font-size: 12px;
+    letter-spacing: 1px;
+    border-radius: 12px;
+    border-width: 1px;
+    border-color: var(--line);
+    background-color: var(--panel);
+    color: var(--ink-2);
+}
+
+.dashboard .tab:hover,
+.dashboard .segmented__item:hover,
+.dashboard .fab:hover {
+    background-color: var(--hover);
+    color: var(--ink);
+}
+
+.dashboard .tab:hover:active,
+.dashboard .segmented__item:hover:active,
+.dashboard .fab:hover:active {
+    background-color: var(--line-strong);
+}
+
+.dashboard .tab--on,
+.dashboard .tab--on:hover,
+.dashboard .segmented__item--on,
+.dashboard .segmented__item--on:hover,
+.dashboard .fab--on,
+.dashboard .fab--on:hover {
+    background-color: var(--accent-dim);
+    color: var(--accent);
+}
+
+.dashboard .fab--on {
+    border-color: rgba(92, 198, 224, 0.5);
+}
+
+.segmented {
+    flex-direction: row;
+    margin-top: 6px;
+    border-width: 1px;
+    border-color: var(--line-strong);
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.dashboard .segmented__item--single {
+    margin-top: 6px;
+    border-width: 1px;
+    border-color: var(--line-strong);
+    border-radius: 6px;
+}
+
+/* ---------- Dock (controls) ---------- */
+
+.dock {
+    align-self: center;
+    width: 600px;
+    max-width: 100%;
+    flex-direction: row;
+    align-items: flex-start;
+    padding: 12px 16px;
+    background-color: var(--panel);
+    border-width: 1px;
+    border-color: var(--line);
+    border-radius: 12px;
+}
+
+.dock__group--wind {
+    flex-grow: 1;
+    margin-right: 20px;
+}
+
+.dock__group--speed {
+    margin-right: 20px;
+}
+
+.dock__header {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.dock__value {
+    font-size: 13px;
+    color: var(--ink);
+}
+
+.dashboard .wind-slider {
+    margin: 4px 0 0 0;
+    height: 24px;
+}
+
+.dashboard .wind-slider .unity-base-slider__tracker {
+    top: 50%;
+    height: 6px;
+    margin-top: -3px;
+    border-width: 0;
+    border-radius: 3px;
+    background-color: var(--track);
+}
+
+.dashboard .wind-slider .unity-base-slider__dragger,
+.dashboard .wind-slider .unity-base-slider__dragger:hover,
+.dashboard .wind-slider .unity-base-slider__dragger:active {
+    top: 50%;
+    width: 18px;
+    height: 18px;
+    margin-top: -9px;
+    border-width: 0;
+    border-radius: 9px;
+    background-color: var(--ink);
+}
+
+.dashboard .wind-slider .unity-base-slider__dragger-border {
+    display: none;
+}
+
+.wind-ticks {
+    height: 14px;
+}
+
+.wind-tick {
+    position: absolute;
+    top: 0;
+    translate: -50% 0;
+    font-size: 10px;
+    color: var(--muted);
+    white-space: nowrap;
+}
+
+/* Tick positions on the 0-30 m/s slider range. */
+.wind-tick--cut-in { left: 10%; }
+.wind-tick--rated { left: 36.7%; }
+.wind-tick--cut-out { left: 83.3%; }
+
+/* ---------- Bottom sheet (phone only) ---------- */
+
+.sheet {
+    display: none;
+}
+
+.sheet__handle {
+    width: 44px;
+    height: 4px;
+    border-radius: 2px;
+    align-self: center;
+    background-color: var(--line-strong);
+}
+
+.sheet__tabs {
+    margin-top: 8px;
+}
+
+/* =================== Phone (portrait) =================== */
+
+.dashboard--portrait .top-bar {
+    height: auto;
+    padding: 14px 16px 10px 16px;
+    background-color: rgba(10, 19, 26, 0.55);
+    border-bottom-width: 0;
+}
+
+.dashboard--portrait .top-bar__brand {
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.dashboard--portrait .turbine-class {
+    margin-left: 0;
+    margin-top: 2px;
+}
+
+.dashboard--portrait .state-explanation,
+.dashboard--portrait .top-bar__meta,
+.dashboard--portrait .right-column,
+.dashboard--portrait .energy-card,
+.dashboard--portrait .card__aside--wide,
+.dashboard--portrait .card__footer--wide,
+.dashboard--portrait .temp-scale,
+.dashboard--portrait #sim-speed-group,
+.dashboard--portrait #xray-group {
+    display: none;
+}
+
+/* column-reverse puts the free scene space on top and the value cards just above the controls. */
+.dashboard--portrait .body {
+    flex-direction: column-reverse;
+    padding: 0 12px;
+}
+
+.dashboard--portrait .left-column {
+    width: auto;
+}
+
+.dashboard--portrait .scene-actions {
+    display: flex;
+    position: absolute;
+    top: 16px;
+    right: 0;
+}
+
+.dashboard--portrait .card {
+    margin-bottom: 8px;
+}
+
+.dashboard--portrait .value--hero {
+    font-size: 38px;
+}
+
+.dashboard--portrait .kpi-list {
+    flex-direction: row;
+    margin: 0 -4px;
+}
+
+.dashboard--portrait .kpi-card {
+    flex-grow: 1;
+    flex-basis: 0;
+    margin: 0 4px 8px 4px;
+    padding: 9px 10px;
+}
+
+.dashboard--portrait .kpi-card .value {
+    font-size: 22px;
+}
+
+.dashboard--portrait .kpi-card .unit {
+    font-size: 11px;
+    margin-left: 3px;
+    margin-bottom: 3px;
+}
+
+.dashboard--portrait .kpi-card .card__header {
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.dashboard--portrait .kpi-card .chip {
+    font-size: 10px;
+    padding: 0 5px;
+    margin-top: 3px;
+}
+
+.dashboard--portrait .scene-space {
+    margin: 0;
+}
+
+.dashboard--portrait .dock {
+    align-self: stretch;
+    width: auto;
+    max-width: none;
+    margin: 0 12px 8px 12px;
+    padding: 8px 14px 6px 14px;
+}
+
+.dashboard--portrait .dock__group--wind {
+    margin-right: 0;
+}
+
+.dashboard--portrait .sheet {
+    display: flex;
+    height: 84px;
+    padding: 8px 16px 24px 16px;
+    background-color: var(--panel-solid);
+    border-width: 1px 1px 0 1px;
+    border-color: var(--line-strong);
+    border-top-left-radius: 18px;
+    border-top-right-radius: 18px;
+}
+
+/* =================== Low landscape screens =================== */
+
+.dashboard--short .energy-card,
+.dashboard--short #curve-card {
+    display: none;
+}
+
+.dashboard--short .value--hero {
+    font-size: 34px;
+}
+
+.dashboard--short .body {
+    padding: 10px 16px;
+}

@@ -1,0 +1,180 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
+    <Style src="Dashboard.uss" />
+    <ui:VisualElement name="dashboard" class="dashboard" picking-mode="Ignore">
+
+        <!-- 1 + 7: identity, operating state with a plain-language explanation, sim clock and data source -->
+        <ui:VisualElement name="top-bar" class="top-bar">
+            <ui:VisualElement class="top-bar__brand" picking-mode="Ignore">
+                <ui:Label name="turbine-id" class="turbine-id" text="WTG-01" />
+                <ui:Label name="turbine-class" class="turbine-class" text="V112-class · 3.0 MW · hub 94 m" />
+            </ui:VisualElement>
+            <ui:VisualElement class="top-bar__status" picking-mode="Ignore">
+                <ui:VisualElement name="state-pill" class="pill pill--good">
+                    <ui:VisualElement class="pill__dot" />
+                    <ui:Label name="state-label" class="pill__label" text="PRODUCING" />
+                </ui:VisualElement>
+                <ui:Label name="state-explanation" class="state-explanation" text="Wind above cut-in, below rated. Rotor follows the wind." />
+            </ui:VisualElement>
+            <ui:VisualElement class="top-bar__meta" picking-mode="Ignore">
+                <ui:Label name="sim-clock" class="meta-text" text="SIM 1× · 00:00:00" />
+                <ui:Label name="data-source" class="source-badge" text="Source: Mock SCADA" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+
+        <ui:VisualElement name="body" class="body" picking-mode="Ignore">
+
+            <!-- 2 + 3: "now" values, in causal order (wind -> rotor -> power -> heat) -->
+            <ui:VisualElement name="left-column" class="left-column" picking-mode="Ignore">
+                <ui:VisualElement name="power-card" class="card card--hero">
+                    <ui:VisualElement class="card__header">
+                        <ui:Label class="card__label" text="POWER OUTPUT" />
+                        <ui:Label name="power-percent" class="card__aside" text="50 % of rated" />
+                    </ui:VisualElement>
+                    <ui:VisualElement class="value-row">
+                        <ui:Label name="power-value" class="value value--hero" text="1.51" />
+                        <ui:Label class="unit" text="MW" />
+                    </ui:VisualElement>
+                    <ui:VisualElement class="meter">
+                        <ui:VisualElement name="power-fill" class="meter__fill" />
+                    </ui:VisualElement>
+                    <ui:VisualElement class="card__footer">
+                        <ui:Label name="homes-label" class="card__aside" text="≈ 3,700 homes" />
+                        <ui:Label class="card__aside" text="rated 3.0 MW" />
+                    </ui:VisualElement>
+                </ui:VisualElement>
+
+                <ui:VisualElement name="kpi-list" class="kpi-list" picking-mode="Ignore">
+                    <ui:VisualElement name="wind-card" class="card kpi-card">
+                        <ui:VisualElement class="card__header">
+                            <ui:Label class="card__label" text="WIND" />
+                            <ui:Label name="wind-aside" class="card__aside card__aside--wide" text="30 s avg 8.1" />
+                        </ui:VisualElement>
+                        <ui:VisualElement class="value-row">
+                            <ui:Label name="wind-value" class="value" text="8.4" />
+                            <ui:Label class="unit" text="m/s" />
+                        </ui:VisualElement>
+                    </ui:VisualElement>
+
+                    <ui:VisualElement name="rotor-card" class="card kpi-card">
+                        <ui:VisualElement class="card__header">
+                            <ui:Label class="card__label" text="ROTOR" />
+                            <ui:Label class="card__aside card__aside--wide" text="range 6.2–14" />
+                        </ui:VisualElement>
+                        <ui:VisualElement class="value-row">
+                            <ui:Label name="rotor-value" class="value" text="11.0" />
+                            <ui:Label class="unit" text="rpm" />
+                        </ui:VisualElement>
+                    </ui:VisualElement>
+
+                    <ui:VisualElement name="temp-card" class="card kpi-card">
+                        <ui:VisualElement class="card__header">
+                            <ui:Label class="card__label" text="GENERATOR" />
+                            <ui:Label name="temp-chip" class="chip chip--good" text="NORMAL" />
+                        </ui:VisualElement>
+                        <ui:VisualElement class="value-row">
+                            <ui:Label name="temp-value" class="value" text="45.3" />
+                            <ui:Label class="unit" text="°C" />
+                        </ui:VisualElement>
+                        <ui:VisualElement name="temp-scale" class="temp-scale">
+                            <ui:VisualElement class="temp-scale__zones">
+                                <ui:VisualElement name="temp-zone-normal" class="temp-scale__zone temp-scale__zone--normal" />
+                                <ui:VisualElement name="temp-zone-warning" class="temp-scale__zone temp-scale__zone--warning" />
+                                <ui:VisualElement name="temp-zone-alarm" class="temp-scale__zone temp-scale__zone--alarm" />
+                                <ui:VisualElement name="temp-zone-trip" class="temp-scale__zone temp-scale__zone--trip" />
+                            </ui:VisualElement>
+                            <ui:VisualElement name="temp-marker" class="temp-scale__marker" />
+                        </ui:VisualElement>
+                        <ui:VisualElement class="card__footer card__footer--wide">
+                            <ui:Label name="temp-limits" class="card__aside" text="warn 140 · alarm 150" />
+                            <ui:Label name="temp-trip" class="card__aside" text="trip 155" />
+                        </ui:VisualElement>
+                    </ui:VisualElement>
+                </ui:VisualElement>
+
+                <ui:VisualElement name="energy-card" class="card energy-card">
+                    <ui:VisualElement class="card__header">
+                        <ui:Label class="card__label" text="ENERGY PRODUCED" />
+                        <ui:Label class="card__aside" text="since start" />
+                    </ui:VisualElement>
+                    <ui:VisualElement class="value-row">
+                        <ui:Label name="energy-value" class="value" text="1.84" />
+                        <ui:Label class="unit" text="MWh" />
+                    </ui:VisualElement>
+                </ui:VisualElement>
+            </ui:VisualElement>
+
+            <!-- Free space over the 3D turbine. Scene actions live here on phones. -->
+            <ui:VisualElement name="scene-space" class="scene-space" picking-mode="Ignore">
+                <ui:VisualElement name="scene-actions" class="scene-actions" picking-mode="Ignore">
+                    <ui:Button name="xray-fab" class="fab" text="X-RAY" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+
+            <!-- 4: "over time" charts. Moved into the bottom sheet on phones. -->
+            <ui:VisualElement name="right-column" class="right-column" picking-mode="Ignore">
+                <ui:VisualElement name="trend-card" class="card chart-card">
+                    <ui:VisualElement class="card__header">
+                        <ui:Label class="card__label" text="TREND · LAST 5 MIN" />
+                        <ui:VisualElement class="tabs">
+                            <ui:Button name="trend-tab-power" class="tab tab--on" text="POWER" />
+                            <ui:Button name="trend-tab-wind" class="tab" text="WIND" />
+                            <ui:Button name="trend-tab-temp" class="tab" text="TEMP" />
+                        </ui:VisualElement>
+                    </ui:VisualElement>
+                    <ui:VisualElement name="trend-chart" class="chart chart--trend">
+                        <ui:Label class="chart__placeholder" text="trend chart" />
+                    </ui:VisualElement>
+                </ui:VisualElement>
+
+                <ui:VisualElement name="curve-card" class="card chart-card">
+                    <ui:VisualElement class="card__header">
+                        <ui:Label class="card__label" text="POWER CURVE" />
+                        <ui:Label class="card__aside card__aside--accent" text="● LIVE" />
+                    </ui:VisualElement>
+                    <ui:VisualElement name="curve-chart" class="chart chart--curve">
+                        <ui:Label class="chart__placeholder" text="power curve" />
+                    </ui:VisualElement>
+                </ui:VisualElement>
+            </ui:VisualElement>
+        </ui:VisualElement>
+
+        <!-- 5 + 6: demo controls. Floating dock on PC, wind slider row on phones. -->
+        <ui:VisualElement name="dock" class="dock">
+            <ui:VisualElement class="dock__group dock__group--wind">
+                <ui:VisualElement class="dock__header">
+                    <ui:Label class="card__label" text="MEAN WIND (SITE)" />
+                    <ui:Label name="wind-setting-value" class="dock__value" text="9.0 m/s" />
+                </ui:VisualElement>
+                <ui:Slider name="wind-slider" class="wind-slider" low-value="0" high-value="30" value="9" />
+                <ui:VisualElement class="wind-ticks" picking-mode="Ignore">
+                    <ui:Label class="wind-tick wind-tick--cut-in" text="3 cut-in" />
+                    <ui:Label class="wind-tick wind-tick--rated" text="11 rated" />
+                    <ui:Label class="wind-tick wind-tick--cut-out" text="25 cut-out" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+            <ui:VisualElement name="sim-speed-group" class="dock__group dock__group--speed">
+                <ui:Label class="card__label" text="SIM SPEED" />
+                <ui:VisualElement class="segmented">
+                    <ui:Button name="sim-speed-1" class="segmented__item" text="1×" />
+                    <ui:Button name="sim-speed-5" class="segmented__item segmented__item--on" text="5×" />
+                    <ui:Button name="sim-speed-20" class="segmented__item" text="20×" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+            <ui:VisualElement name="xray-group" class="dock__group dock__group--xray">
+                <ui:Label class="card__label" text="HOUSING" />
+                <ui:Button name="xray-button" class="segmented__item segmented__item--single" text="X-RAY" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+
+        <!-- Phone only: bottom sheet (peek). Opens on tab tap; grab area sits above the iOS home indicator. -->
+        <ui:VisualElement name="sheet" class="sheet">
+            <ui:VisualElement class="sheet__handle" />
+            <ui:VisualElement class="tabs sheet__tabs">
+                <ui:Button name="sheet-tab-trends" class="tab tab--on" text="TRENDS" />
+                <ui:Button name="sheet-tab-curve" class="tab" text="CURVE" />
+                <ui:Button name="sheet-tab-more" class="tab" text="MORE" />
+            </ui:VisualElement>
+            <ui:VisualElement name="sheet-content" class="sheet__content" picking-mode="Ignore" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>
