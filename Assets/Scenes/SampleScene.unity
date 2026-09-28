@@ -306,12 +306,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: 5a47e18a9c33a02499b836473ecd6ea2, type: 3}
       propertyPath: m_Name
-      value: WTG
+      value: WTG_01_Model
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 5a47e18a9c33a02499b836473ecd6ea2, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1352469945}
   m_SourcePrefab: {fileID: 100100000, guid: 5a47e18a9c33a02499b836473ecd6ea2, type: 3}
 --- !u!1 &410087039
 GameObject:
@@ -440,6 +443,16 @@ MonoBehaviour:
   m_ShadowLayerMask: 1
   m_RenderingLayers: 1
   m_ShadowRenderingLayers: 1
+--- !u!23 &455689774 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: -4895043472978661716, guid: 5a47e18a9c33a02499b836473ecd6ea2, type: 3}
+  m_PrefabInstance: {fileID: 350531012}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &820437466 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -1815357152888347668, guid: 5a47e18a9c33a02499b836473ecd6ea2, type: 3}
+  m_PrefabInstance: {fileID: 350531012}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &832575517
 GameObject:
   m_ObjectHideFlags: 0
@@ -500,7 +513,7 @@ GameObject:
   - component: {fileID: 1145990850}
   - component: {fileID: 1145990849}
   m_Layer: 0
-  m_Name: WTG-01
+  m_Name: WTG-01_DataSim
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -633,6 +646,76 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1352469944 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: 5a47e18a9c33a02499b836473ecd6ea2, type: 3}
+  m_PrefabInstance: {fileID: 350531012}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1352469945
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1352469944}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3d49d5d7473d201478c1535e7ead7db8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::WindFarm.Visuals.TurbineVisualController
+  simulator: {fileID: 1145990849}
+  rotor: {fileID: 1598709564}
+  rpmSmoothingTime: 0.6
+  invertSpinDirection: 0
+  blades:
+  - {fileID: 1858947449}
+  - {fileID: 820437466}
+  - {fileID: 1638919130}
+  idlePitch: 70
+  featherPitch: 90
+  ratedWindSpeed: 11
+  pitchAtCutOut: 25
+  pitchRate: 8
+  windSmoothingTime: 2
+  invertPitchDirection: 0
+  heatRenderers:
+  - {fileID: 455689774}
+  - {fileID: 1915225012}
+  coldTemperature: 20
+  hotTemperature: 100
+  heatGradient:
+    serializedVersion: 2
+    key0: {r: 0.35, g: 0.5, b: 0.7, a: 1}
+    key1: {r: 0.7, g: 0.7, b: 0.7, a: 1}
+    key2: {r: 1, g: 0.55, b: 0.1, a: 0}
+    key3: {r: 1, g: 0.1, b: 0.05, a: 0}
+    key4: {r: 0, g: 0, b: 0, a: 0}
+    key5: {r: 0, g: 0, b: 0, a: 0}
+    key6: {r: 0, g: 0, b: 0, a: 0}
+    key7: {r: 0, g: 0, b: 0, a: 0}
+    ctime0: 0
+    ctime1: 29491
+    ctime2: 52428
+    ctime3: 65535
+    ctime4: 0
+    ctime5: 0
+    ctime6: 0
+    ctime7: 0
+    atime0: 0
+    atime1: 65535
+    atime2: 0
+    atime3: 0
+    atime4: 0
+    atime5: 0
+    atime6: 0
+    atime7: 0
+    m_Mode: 0
+    m_ColorSpace: -1
+    m_NumColorKeys: 4
+    m_NumAlphaKeys: 2
+  glowStartTemperature: 70
+  maxGlowIntensity: 1.5
+  temperatureSmoothingTime: 1
 --- !u!1 &1365045597
 GameObject:
   m_ObjectHideFlags: 0
@@ -679,6 +762,26 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!4 &1598709564 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -5585538199095129322, guid: 5a47e18a9c33a02499b836473ecd6ea2, type: 3}
+  m_PrefabInstance: {fileID: 350531012}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &1638919130 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 2244661954278464365, guid: 5a47e18a9c33a02499b836473ecd6ea2, type: 3}
+  m_PrefabInstance: {fileID: 350531012}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &1858947449 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -7047631003763905507, guid: 5a47e18a9c33a02499b836473ecd6ea2, type: 3}
+  m_PrefabInstance: {fileID: 350531012}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &1915225012 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 5789199509443956040, guid: 5a47e18a9c33a02499b836473ecd6ea2, type: 3}
+  m_PrefabInstance: {fileID: 350531012}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
@@ -688,6 +791,6 @@ SceneRoots:
   - {fileID: 832575519}
   - {fileID: 1329672012}
   - {fileID: 1145990850}
+  - {fileID: 350531012}
   - {fileID: 1248645718}
   - {fileID: 1365045599}
-  - {fileID: 350531012}
