@@ -52,18 +52,33 @@ namespace WindFarm.Simulation
         [field: SerializeField, Min(0.1f), Tooltip("Wind averaging time used by the controller for its decisions (s).")]
         public float ControlAveragingTime { get; private set; } = 30f;
 
+        // The modelled temperature is the stator winding temperature (PT100 sensors embedded in the winding), the usual
+        // SCADA generator signal. Its limit is set by the insulation class (IEC 60085): wind generators typically use
+        // Class F insulation (155 °C) operated at Class B temperature rise, i.e. roughly 110-120 °C at rated power.
         [field: Header("Thermal")]
         [field: SerializeField, Tooltip("Ambient temperature inside the nacelle (°C).")]
         public float AmbientTemperature { get; private set; } = 15f;
 
-        [field: SerializeField, Min(0f), Tooltip("Temperature rise from friction and windage at rated speed with no load (°C).")]
-        public float FrictionTemperatureRise { get; private set; } = 6f;
+        [field: SerializeField, Min(0f), Tooltip("Winding temperature rise from friction and windage at rated speed with no load (°C).")]
+        public float FrictionTemperatureRise { get; private set; } = 8f;
 
-        [field: SerializeField, Min(0f), Tooltip("Additional temperature rise from copper (I²R) losses at rated power (°C).")]
-        public float LoadTemperatureRise { get; private set; } = 55f;
+        [field: SerializeField, Min(0f), Tooltip("Additional winding temperature rise from copper (I²R) losses at rated power (°C). " +
+                                                  "With the defaults the winding settles at ~118 °C at rated power.")]
+        public float LoadTemperatureRise { get; private set; } = 95f;
 
         [field: SerializeField, Min(0.1f), Tooltip("Generator thermal time constant (s). Real value is 20-40 min; shortened for the demo.")]
         public float ThermalTimeConstant { get; private set; } = 90f;
+
+        // Typical setpoints for Class F insulation. Real values are OEM specific and usually not published.
+        [field: Header("Generator Protection")]
+        [field: SerializeField, Tooltip("Winding temperature that raises a warning (°C). Operation continues.")]
+        public float GeneratorWarningTemperature { get; private set; } = 140f;
+
+        [field: SerializeField, Tooltip("Winding temperature that raises an alarm and derates the output (°C).")]
+        public float GeneratorAlarmTemperature { get; private set; } = 150f;
+
+        [field: SerializeField, Tooltip("Winding temperature that trips (stops) the turbine (°C). Class F insulation limit.")]
+        public float GeneratorTripTemperature { get; private set; } = 155f;
 
         [field: Header("Environment")]
         [field: SerializeField, Min(0.5f), Tooltip("Air density ρ (kg/m³).")]
@@ -71,5 +86,8 @@ namespace WindFarm.Simulation
 
         public float SweptArea => Mathf.PI * RotorRadius * RotorRadius;
         public float RatedPowerWatts => RatedPowerMW * 1_000_000f;
+
+        /// <summary>Equilibrium winding temperature at rated speed and rated power (°C).</summary>
+        public float RatedGeneratorTemperature => AmbientTemperature + FrictionTemperatureRise + LoadTemperatureRise;
     }
 }
