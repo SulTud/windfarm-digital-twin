@@ -559,9 +559,12 @@ MonoBehaviour:
     <RestartWindSpeed>k__BackingField: 20
     <ControlAveragingTime>k__BackingField: 30
     <AmbientTemperature>k__BackingField: 15
-    <FrictionTemperatureRise>k__BackingField: 6
-    <LoadTemperatureRise>k__BackingField: 55
+    <FrictionTemperatureRise>k__BackingField: 8
+    <LoadTemperatureRise>k__BackingField: 95
     <ThermalTimeConstant>k__BackingField: 90
+    <GeneratorWarningTemperature>k__BackingField: 140
+    <GeneratorAlarmTemperature>k__BackingField: 150
+    <GeneratorTripTemperature>k__BackingField: 155
     <AirDensity>k__BackingField: 1.225
   windConditions:
     <MeanWindSpeed>k__BackingField: 9
@@ -700,39 +703,16 @@ MonoBehaviour:
   - {fileID: 455689774}
   - {fileID: 1915225012}
   coldTemperature: 20
-  hotTemperature: 100
-  heatGradient:
-    serializedVersion: 2
-    key0: {r: 0.35, g: 0.5, b: 0.7, a: 1}
-    key1: {r: 0.7, g: 0.7, b: 0.7, a: 1}
-    key2: {r: 1, g: 0.55, b: 0.1, a: 0}
-    key3: {r: 1, g: 0.1, b: 0.05, a: 0}
-    key4: {r: 0, g: 0, b: 0, a: 0}
-    key5: {r: 0, g: 0, b: 0, a: 0}
-    key6: {r: 0, g: 0, b: 0, a: 0}
-    key7: {r: 0, g: 0, b: 0, a: 0}
-    ctime0: 0
-    ctime1: 29491
-    ctime2: 52428
-    ctime3: 65535
-    ctime4: 0
-    ctime5: 0
-    ctime6: 0
-    ctime7: 0
-    atime0: 0
-    atime1: 65535
-    atime2: 0
-    atime3: 0
-    atime4: 0
-    atime5: 0
-    atime6: 0
-    atime7: 0
-    m_Mode: 0
-    m_ColorSpace: -1
-    m_NumColorKeys: 4
-    m_NumAlphaKeys: 2
-  glowStartTemperature: 70
+  coldColor: {r: 0.35, g: 0.5, b: 0.7, a: 1}
+  warmColor: {r: 0.7, g: 0.7, b: 0.7, a: 1}
+  ratedColor: {r: 0.91, g: 0.59, b: 0.21, a: 1}
+  warningColor: {r: 1, g: 0.45, b: 0.08, a: 1}
+  alarmColor: {r: 0.7433963, g: 0.0073969783, b: 0, a: 1}
+  ratedGlowIntensity: 0.3
+  warningGlowIntensity: 0.6
   maxGlowIntensity: 1.5
+  alarmPulseFrequency: 1
+  alarmPulseAmount: 0.35
   temperatureSmoothingTime: 1
   mainShaft: {fileID: 2114181727}
   brakeCaliperRenderer: {fileID: 350531013}
