@@ -22,6 +22,11 @@ ModelImporter:
   - first:
       type: UnityEngine:Material
       assembly: UnityEngine.CoreModule
+      name: M_BrakeCaliper
+    second: {fileID: 2100000, guid: 07144515fc2421b47832f749a6aede28, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
       name: M_DriveTrain
     second: {fileID: 2100000, guid: 3321ee72e93c43942b545a54f45d0fa3, type: 2}
   - first:
