@@ -67,21 +67,41 @@ namespace WindFarm.Visuals
         [SerializeField, Tooltip("Renderers tinted by the generator temperature (Generator, Cooler). Their first material is instanced.")]
         private Renderer[] heatRenderers = new Renderer[0];
 
-        [SerializeField, Tooltip("Temperature mapped to the left end of the gradient (deg C).")]
+        [SerializeField, Tooltip("At and below this temperature the parts show the cold color (deg C). " +
+                                 "The other color stops come from the simulator specs: rated equilibrium, warning and alarm.")]
         private float coldTemperature = 20f;
 
-        [SerializeField, Tooltip("Temperature mapped to the right end of the gradient (deg C). ~76 deg C is the equilibrium at rated power.")]
-        private float hotTemperature = 100f;
+        [SerializeField, Tooltip("Color at the cold temperature.")]
+        private Color coldColor = new Color(0.35f, 0.50f, 0.70f);
 
-        [SerializeField, Tooltip("Base color over the temperature range.")]
-        private Gradient heatGradient = CreateDefaultHeatGradient();
+        [SerializeField, Tooltip("Color halfway between the cold and the rated temperature.")]
+        private Color warmColor = new Color(0.70f, 0.70f, 0.70f);
 
-        [SerializeField, Tooltip("Temperature at which the emissive glow starts (deg C). " +
-                                 "Glow only works if Emission is enabled on the material (keeps the shader variant in WebGL builds).")]
-        private float glowStartTemperature = 70f;
+        [SerializeField, Tooltip("Color at the rated-power equilibrium. Golden so a busy generator looks alive, not alarming.")]
+        private Color ratedColor = new Color(0.91f, 0.59f, 0.21f);
 
-        [SerializeField, Min(0f), Tooltip("Emission intensity multiplier at the hot temperature.")]
+        [SerializeField, Tooltip("Color at the warning temperature.")]
+        private Color warningColor = new Color(1.00f, 0.45f, 0.08f);
+
+        [SerializeField, Tooltip("Color at and above the alarm temperature. Keep green and blue near zero: tonemapping " +
+                                 "shifts a bright glowing red with even a little green toward orange.")]
+        private Color alarmColor = new Color(0.80f, 0.02f, 0.01f);
+
+        [SerializeField, Min(0f), Tooltip("Emission intensity at the rated temperature. Glow fades in from the warm stop. " +
+                                          "Glow only works if Emission is enabled on the material (keeps the shader variant in WebGL builds).")]
+        private float ratedGlowIntensity = 0.3f;
+
+        [SerializeField, Min(0f), Tooltip("Emission intensity at the warning temperature.")]
+        private float warningGlowIntensity = 0.6f;
+
+        [SerializeField, Min(0f), Tooltip("Emission intensity at and above the alarm temperature.")]
         private float maxGlowIntensity = 1.5f;
+
+        [SerializeField, Min(0f), Tooltip("Glow pulse frequency at and above the alarm temperature (Hz).")]
+        private float alarmPulseFrequency = 1f;
+
+        [SerializeField, Range(0f, 1f), Tooltip("Glow pulse depth at and above the alarm temperature (fraction of the glow).")]
+        private float alarmPulseAmount = 0.35f;
 
         [SerializeField, Min(0.01f), Tooltip("Smoothing time constant for the measured temperature (s).")]
         private float temperatureSmoothingTime = 1f;
@@ -131,6 +151,12 @@ namespace WindFarm.Visuals
         private Quaternion mainShaftInitialRotation;
         private Quaternion[] bladeInitialRotations;
         private Material[] heatMaterials;
+
+        // Heat color stops: cold, warm, rated, warning, alarm. Refilled every frame (no allocation) so Inspector
+        // changes to the colors or the simulator specs apply immediately.
+        private readonly float[] heatStopTemperatures = new float[5];
+        private readonly Color[] heatStopColors = new Color[5];
+        private readonly float[] heatStopGlows = new float[5];
 
         private Material brakeMaterial;
         private Color brakeReleasedColor;
@@ -342,9 +368,8 @@ namespace WindFarm.Visuals
 
         private void UpdateHeatColor()
         {
-            float heat = Mathf.InverseLerp(coldTemperature, hotTemperature, smoothedTemperature);
-            float glow = Mathf.InverseLerp(glowStartTemperature, hotTemperature, smoothedTemperature) * maxGlowIntensity;
-            Color color = heatGradient.Evaluate(heat);
+            FillHeatStops(simulator.Specs);
+            EvaluateHeat(smoothedTemperature, out Color color, out float glow);
 
             foreach (Material material in heatMaterials)
             {
@@ -393,19 +418,64 @@ namespace WindFarm.Visuals
         private static float Smooth(float current, float target, float timeConstant, float deltaTime) =>
             current + (target - current) * (1f - Mathf.Exp(-deltaTime / timeConstant));
 
-        private static Gradient CreateDefaultHeatGradient()
+        /// <remarks>
+        /// Stops are anchored to real temperatures instead of gradient percentages, so the generator is always golden at
+        /// the rated equilibrium, orange at the warning limit and red at the alarm limit, whatever the specs say.
+        /// </remarks>
+        private void FillHeatStops(TurbineSpecs specs)
         {
-            var gradient = new Gradient();
-            gradient.SetKeys(
-                new[]
+            float rated = specs.RatedGeneratorTemperature;
+
+            heatStopTemperatures[0] = coldTemperature;
+            heatStopTemperatures[1] = (coldTemperature + rated) * 0.5f;
+            heatStopTemperatures[2] = rated;
+            heatStopTemperatures[3] = specs.GeneratorWarningTemperature;
+            heatStopTemperatures[4] = specs.GeneratorAlarmTemperature;
+
+            // Protection limits win: if a limit is set below the rated equilibrium (or cold stop), pull the earlier
+            // stops down so the stops stay in ascending order and the limit colors are still reached.
+            for (int i = heatStopTemperatures.Length - 2; i >= 0; i--)
+                heatStopTemperatures[i] = Mathf.Min(heatStopTemperatures[i], heatStopTemperatures[i + 1]);
+
+            heatStopColors[0] = coldColor;
+            heatStopColors[1] = warmColor;
+            heatStopColors[2] = ratedColor;
+            heatStopColors[3] = warningColor;
+            heatStopColors[4] = alarmColor;
+
+            heatStopGlows[0] = 0f;
+            heatStopGlows[1] = 0f;
+            heatStopGlows[2] = ratedGlowIntensity;
+            heatStopGlows[3] = warningGlowIntensity;
+            heatStopGlows[4] = maxGlowIntensity;
+        }
+
+        private void EvaluateHeat(float temperature, out Color color, out float glow)
+        {
+            int last = heatStopTemperatures.Length - 1;
+
+            if (temperature <= heatStopTemperatures[0])
+            {
+                color = heatStopColors[0];
+                glow = heatStopGlows[0];
+                return;
+            }
+
+            for (int i = 1; i <= last; i++)
+            {
+                if (temperature < heatStopTemperatures[i])
                 {
-                    new GradientColorKey(new Color(0.35f, 0.50f, 0.70f), 0f),    // cold: steel blue
-                    new GradientColorKey(new Color(0.70f, 0.70f, 0.70f), 0.45f), // warm: neutral grey
-                    new GradientColorKey(new Color(1.00f, 0.55f, 0.10f), 0.8f),  // hot: orange
-                    new GradientColorKey(new Color(1.00f, 0.10f, 0.05f), 1f),    // overheating: red
-                },
-                new[] { new GradientAlphaKey(1f, 0f), new GradientAlphaKey(1f, 1f) });
-            return gradient;
+                    float t = Mathf.InverseLerp(heatStopTemperatures[i - 1], heatStopTemperatures[i], temperature);
+                    color = Color.Lerp(heatStopColors[i - 1], heatStopColors[i], t);
+                    glow = Mathf.Lerp(heatStopGlows[i - 1], heatStopGlows[i], t);
+                    return;
+                }
+            }
+
+            // At or above the alarm limit: full red with a slow pulse, like a warning beacon.
+            float pulse = Mathf.Sin(Time.time * alarmPulseFrequency * 2f * Mathf.PI);
+            color = heatStopColors[last];
+            glow = heatStopGlows[last] * (1f + alarmPulseAmount * pulse);
         }
 
 #if UNITY_EDITOR
