@@ -304,9 +304,17 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: -5853672700611418013, guid: 5a47e18a9c33a02499b836473ecd6ea2, type: 3}
+      propertyPath: m_Enabled
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: 5a47e18a9c33a02499b836473ecd6ea2, type: 3}
       propertyPath: m_Name
       value: WTG_01_Model
+      objectReference: {fileID: 0}
+    - target: {fileID: 4637652957003780669, guid: 5a47e18a9c33a02499b836473ecd6ea2, type: 3}
+      propertyPath: m_IsActive
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -316,6 +324,11 @@ PrefabInstance:
       insertIndex: -1
       addedObject: {fileID: 1352469945}
   m_SourcePrefab: {fileID: 100100000, guid: 5a47e18a9c33a02499b836473ecd6ea2, type: 3}
+--- !u!23 &350531013 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: -6461224967044408619, guid: 5a47e18a9c33a02499b836473ecd6ea2, type: 3}
+  m_PrefabInstance: {fileID: 350531012}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &410087039
 GameObject:
   m_ObjectHideFlags: 0
@@ -721,6 +734,12 @@ MonoBehaviour:
   glowStartTemperature: 70
   maxGlowIntensity: 1.5
   temperatureSmoothingTime: 1
+  mainShaft: {fileID: 2114181727}
+  brakeCaliperRenderer: {fileID: 350531013}
+  brakeEngageRpm: 3
+  brakeEngagedColor: {r: 1, g: 0.08, b: 0.04, a: 1}
+  brakeGlowIntensity: 2
+  brakeFadeTime: 0.4
   housingRenderer: {fileID: 1226773817}
   xRayMaterial: {fileID: 2100000, guid: 8886a8c3c2c32f24e9dc462ba20c7f25, type: 2}
   xRayOpacity: 0.12
@@ -790,6 +809,11 @@ Transform:
 --- !u!23 &1915225012 stripped
 MeshRenderer:
   m_CorrespondingSourceObject: {fileID: 5789199509443956040, guid: 5a47e18a9c33a02499b836473ecd6ea2, type: 3}
+  m_PrefabInstance: {fileID: 350531012}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &2114181727 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 2861116016573080681, guid: 5a47e18a9c33a02499b836473ecd6ea2, type: 3}
   m_PrefabInstance: {fileID: 350531012}
   m_PrefabAsset: {fileID: 0}
 --- !u!1660057539 &9223372036854775807

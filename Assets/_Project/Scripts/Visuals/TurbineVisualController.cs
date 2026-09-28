@@ -8,6 +8,8 @@ namespace WindFarm.Visuals
     ///   RotorRpm             -> Rotor spin (deg/s = RPM x 6)
     ///   State (+ wind speed) -> Blade pitch (feather to 90 deg on storm shutdown)
     ///   GeneratorTemperature -> Generator / Cooler heat color
+    ///   RotorRpm             -> MainShaft spin (same angle as the rotor, no gearbox in between)
+    ///   State + RotorRpm     -> Brake caliper glows red while the mechanical brake holds the rotor
     ///
     /// Telemetry arrives at 5 Hz with sensor noise, so every value is smoothed each frame (exponential smoothing)
     /// and pitch is additionally rate limited like a real pitch drive.
@@ -84,6 +86,26 @@ namespace WindFarm.Visuals
         [SerializeField, Min(0.01f), Tooltip("Smoothing time constant for the measured temperature (s).")]
         private float temperatureSmoothingTime = 1f;
 
+        [Header("Drivetrain")]
+        [SerializeField, Tooltip("Low-speed shaft. Spins with the rotor around its local +Z axis.")]
+        private Transform mainShaft;
+
+        [SerializeField, Tooltip("Brake caliper renderer. Its first material is instanced; enable Emission on it for the glow.")]
+        private Renderer brakeCaliperRenderer;
+
+        [SerializeField, Min(0f), Tooltip("During storm shutdown the mechanical brake engages below this rotor speed (RPM). " +
+                                          "Real turbines brake aerodynamically (feathering) first; the disc brake only holds a slow rotor.")]
+        private float brakeEngageRpm = 3f;
+
+        [SerializeField, Tooltip("Caliper color while the brake is engaged.")]
+        private Color brakeEngagedColor = new Color(1f, 0.08f, 0.04f);
+
+        [SerializeField, Min(0f), Tooltip("Emission intensity multiplier while the brake is engaged.")]
+        private float brakeGlowIntensity = 2f;
+
+        [SerializeField, Min(0.01f), Tooltip("Fade duration when the brake engages or releases (s).")]
+        private float brakeFadeTime = 0.4f;
+
         [Header("X-Ray")]
         [SerializeField, Tooltip("Nacelle housing renderer that fades out to reveal the drivetrain.")]
         private Renderer housingRenderer;
@@ -106,8 +128,13 @@ namespace WindFarm.Visuals
         private bool hasTelemetry;
 
         private Quaternion rotorInitialRotation;
+        private Quaternion mainShaftInitialRotation;
         private Quaternion[] bladeInitialRotations;
         private Material[] heatMaterials;
+
+        private Material brakeMaterial;
+        private Color brakeReleasedColor;
+        private float brakeBlend;
 
         private float smoothedRpm;
         private float smoothedWindSpeed;
@@ -132,6 +159,15 @@ namespace WindFarm.Visuals
         {
             if (rotor != null)
                 rotorInitialRotation = rotor.localRotation;
+
+            if (mainShaft != null)
+                mainShaftInitialRotation = mainShaft.localRotation;
+
+            if (brakeCaliperRenderer != null)
+            {
+                brakeMaterial = brakeCaliperRenderer.material;
+                brakeReleasedColor = brakeMaterial.GetColor(BaseColorId);
+            }
 
             bladeInitialRotations = new Quaternion[blades.Length];
             for (int i = 0; i < blades.Length; i++)
@@ -189,6 +225,9 @@ namespace WindFarm.Visuals
             if (xRayInstance != null)
                 Destroy(xRayInstance);
 
+            if (brakeMaterial != null)
+                Destroy(brakeMaterial);
+
             if (heatMaterials == null)
                 return;
 
@@ -212,6 +251,7 @@ namespace WindFarm.Visuals
             smoothedWindSpeed = telemetry.WindSpeed;
             smoothedTemperature = telemetry.GeneratorTemperature;
             currentPitch = CalculateTargetPitch(telemetry.State, smoothedWindSpeed);
+            brakeBlend = IsBrakeEngaged() ? 1f : 0f;
         }
 
         private void Update()
@@ -231,18 +271,38 @@ namespace WindFarm.Visuals
             UpdateRotor(deltaTime);
             UpdatePitch(deltaTime);
             UpdateHeatColor();
+            UpdateBrake(deltaTime);
         }
 
         private void UpdateRotor(float deltaTime)
         {
-            if (rotor == null)
-                return;
-
             // 1 RPM = 360 deg / 60 s = 6 deg/s. Repeat keeps the angle small so float precision never degrades.
             float direction = invertSpinDirection ? -1f : 1f;
             spinAngle = Mathf.Repeat(spinAngle + smoothedRpm * 6f * direction * deltaTime, 360f);
+            Quaternion spin = Quaternion.AngleAxis(spinAngle, Vector3.forward);
 
-            rotor.localRotation = rotorInitialRotation * Quaternion.AngleAxis(spinAngle, Vector3.forward);
+            if (rotor != null)
+                rotor.localRotation = rotorInitialRotation * spin;
+
+            // The main shaft is bolted to the hub, so it turns at exactly the rotor speed.
+            if (mainShaft != null)
+                mainShaft.localRotation = mainShaftInitialRotation * spin;
+        }
+
+        private bool IsBrakeEngaged() =>
+            latest.State == TurbineOperatingState.StormShutdown && smoothedRpm < brakeEngageRpm;
+
+        private void UpdateBrake(float deltaTime)
+        {
+            if (brakeMaterial == null)
+                return;
+
+            float target = IsBrakeEngaged() ? 1f : 0f;
+            brakeBlend = Mathf.MoveTowards(brakeBlend, target, deltaTime / brakeFadeTime);
+
+            brakeMaterial.SetColor(BaseColorId, Color.Lerp(brakeReleasedColor, brakeEngagedColor, brakeBlend));
+            if (brakeMaterial.IsKeywordEnabled(EmissionKeyword))
+                brakeMaterial.SetColor(EmissionColorId, brakeEngagedColor * (brakeGlowIntensity * brakeBlend));
         }
 
         private void UpdatePitch(float deltaTime)
@@ -371,6 +431,10 @@ namespace WindFarm.Visuals
 
             Transform nacelle = FindChildRecursive(transform, "Nacelle");
             housingRenderer = nacelle != null ? nacelle.GetComponent<Renderer>() : null;
+
+            mainShaft = FindChildRecursive(transform, "MainShaft");
+            Transform caliper = FindChildRecursive(transform, "BrakeCaliper");
+            brakeCaliperRenderer = caliper != null ? caliper.GetComponent<Renderer>() : null;
         }
 
         private static Transform FindChildRecursive(Transform parent, string childName)
