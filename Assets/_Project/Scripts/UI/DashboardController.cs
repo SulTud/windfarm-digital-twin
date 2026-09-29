@@ -29,6 +29,7 @@ namespace WindFarm.UI
         private ITurbineTelemetrySource source;
         private StatusBarPresenter statusBar;
         private ValueCardsPresenter valueCards;
+        private AlertsPresenter alerts;
 
         private void OnEnable()
         {
@@ -51,6 +52,7 @@ namespace WindFarm.UI
                 turbineClass, specs.RatedPowerMW, hubHeight);
             statusBar = new StatusBarPresenter(root, specs, classText);
             valueCards = new ValueCardsPresenter(root, specs);
+            alerts = new AlertsPresenter(root, specs);
 
             source = simulator;
             source.TelemetryUpdated += HandleTelemetry;
@@ -71,6 +73,8 @@ namespace WindFarm.UI
             statusBar?.Dispose();
             statusBar = null;
             valueCards = null;
+            alerts?.Dispose();
+            alerts = null;
         }
 
         private void Update()
@@ -78,12 +82,14 @@ namespace WindFarm.UI
             float deltaTime = Time.unscaledDeltaTime;
             statusBar?.Tick(deltaTime);
             valueCards?.Tick(deltaTime);
+            alerts?.Tick(deltaTime);
         }
 
         private void HandleTelemetry(TurbineTelemetry telemetry)
         {
             statusBar.Show(telemetry, simulator.SimulationSpeed);
             valueCards.Show(telemetry);
+            alerts.Show(telemetry);
         }
 
 #if UNITY_EDITOR

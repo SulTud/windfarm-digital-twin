@@ -84,34 +84,14 @@ namespace WindFarm.UI
             string pillClass;
             switch (newState)
             {
-                case TurbineOperatingState.Idle:
-                    pillClass = "pill--idle";
-                    stateLabel.text = "IDLE";
-                    explanation.text = Format("Wind below cut-in ({0:0} m/s). Rotor idling, no power.", specs.CutInWindSpeed);
-                    break;
-
-                case TurbineOperatingState.RatedPower:
-                    pillClass = "pill--rated";
-                    stateLabel.text = "RATED POWER";
-                    explanation.text = Format("Wind above rated (~{0:0} m/s). Blades pitch to hold {1:0.0} MW.",
-                        specs.RatedWindSpeed, specs.RatedPowerMW);
-                    break;
-
-                case TurbineOperatingState.StormShutdown:
-                    // A protective stop, not a fault: amber, not red.
-                    pillClass = "pill--warn";
-                    stateLabel.text = "STORM SHUTDOWN";
-                    explanation.text = Format("Wind above cut-out ({0:0} m/s). Blades feathered, brake holding. Restarts below {1:0} m/s.",
-                        specs.CutOutWindSpeed, specs.RestartWindSpeed);
-                    break;
-
-                default:
-                    pillClass = "pill--good";
-                    stateLabel.text = "PRODUCING";
-                    explanation.text = Format("Wind between cut-in ({0:0}) and rated (~{1:0} m/s). Rotor follows the wind.",
-                        specs.CutInWindSpeed, specs.RatedWindSpeed);
-                    break;
+                case TurbineOperatingState.Idle: pillClass = "pill--idle"; break;
+                case TurbineOperatingState.RatedPower: pillClass = "pill--rated"; break;
+                case TurbineOperatingState.StormShutdown: pillClass = "pill--warn"; break; // protective stop, not a fault
+                default: pillClass = "pill--good"; break;
             }
+
+            stateLabel.text = OperatingStateText.Label(newState);
+            explanation.text = OperatingStateText.Explanation(newState, specs);
 
             foreach (string candidate in PillClasses)
                 pill.EnableInClassList(candidate, candidate == pillClass);

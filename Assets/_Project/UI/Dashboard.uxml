@@ -105,6 +105,16 @@
 
             <!-- Free space over the 3D turbine. Scene actions live here on phones. -->
             <ui:VisualElement name="scene-space" class="scene-space" picking-mode="Ignore">
+                <!-- Notification banner: the most important active event (thermal trip / alarm / storm / warning). -->
+                <ui:VisualElement name="notification-area" class="notification-area" picking-mode="Ignore">
+                    <ui:VisualElement name="notification" class="notification" picking-mode="Ignore">
+                        <ui:Label class="notification__icon" text="!" picking-mode="Ignore" />
+                        <ui:VisualElement class="notification__body" picking-mode="Ignore">
+                            <ui:Label name="notification-title" class="notification__title" text="Storm shutdown" picking-mode="Ignore" />
+                            <ui:Label name="notification-message" class="notification__message" text="Wind above cut-out." picking-mode="Ignore" />
+                        </ui:VisualElement>
+                    </ui:VisualElement>
+                </ui:VisualElement>
                 <ui:VisualElement name="scene-actions" class="scene-actions" picking-mode="Ignore">
                     <ui:Button name="xray-fab" class="fab" text="X-RAY" />
                 </ui:VisualElement>

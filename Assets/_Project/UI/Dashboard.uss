@@ -250,6 +250,15 @@
     margin-bottom: 10px;
 }
 
+/* Temperature card border follows the level (after .card so it wins at equal specificity). */
+.card--warn {
+    border-color: var(--warn-line);
+}
+
+.card--crit {
+    border-color: var(--crit-line);
+}
+
 .card__header {
     flex-direction: row;
     justify-content: space-between;
@@ -353,6 +362,81 @@
     margin-left: -1px;
     border-radius: 1px;
     background-color: var(--ink);
+}
+
+/* ---------- Notification banner ---------- */
+
+.notification-area {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    align-items: center;
+}
+
+/* Stays in the layout while hidden so opacity and translate can animate. */
+.notification {
+    flex-direction: row;
+    width: 100%;
+    max-width: 560px;
+    padding: 10px 14px;
+    background-color: var(--panel-solid);
+    border-width: 1px;
+    border-left-width: 4px;
+    border-color: var(--line);
+    border-radius: 10px;
+    opacity: 0;
+    translate: 0 -6px;
+    transition-property: opacity, translate, border-color;
+    transition-duration: 0.3s;
+}
+
+.notification--visible {
+    opacity: 1;
+    translate: 0 0;
+}
+
+.notification--warn {
+    border-left-color: var(--warn);
+}
+
+.notification--crit {
+    border-left-color: var(--crit);
+}
+
+.notification__icon {
+    width: 20px;
+    height: 20px;
+    margin: 1px 10px 0 0;
+    border-radius: 4px;
+    -unity-font-definition: url("Fonts/BarlowCondensed-Bold SDF.asset");
+    -unity-text-align: middle-center;
+    font-size: 14px;
+    color: var(--ground);
+    background-color: var(--warn);
+}
+
+.notification--crit .notification__icon {
+    background-color: var(--crit);
+}
+
+.notification__body {
+    flex-grow: 1;
+    flex-shrink: 1;
+}
+
+.notification__title {
+    -unity-font-definition: url("Fonts/BarlowCondensed-SemiBold SDF.asset");
+    font-size: 16px;
+    letter-spacing: 0.3px;
+    color: var(--ink);
+}
+
+.notification__message {
+    margin-top: 2px;
+    font-size: 13px;
+    color: var(--ink-2);
+    white-space: normal;
 }
 
 /* ---------- Charts (placeholders until the chart step) ---------- */
@@ -644,6 +728,19 @@
 .dashboard--portrait.dashboard--explain .state-explanation {
     opacity: 1;
     translate: 0 0;
+}
+
+/* The banner takes the same spot on phones and already says what matters most. */
+.dashboard--portrait.dashboard--banner .state-explanation {
+    opacity: 0;
+}
+
+.dashboard--portrait .notification-area {
+    top: 6px;
+}
+
+.dashboard--portrait .notification__message {
+    font-size: 14px;
 }
 
 /* column-reverse puts the free scene space on top and the value cards just above the controls. */
