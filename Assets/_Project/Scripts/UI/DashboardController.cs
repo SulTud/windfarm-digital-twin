@@ -26,11 +26,16 @@ namespace WindFarm.UI
         [SerializeField, Min(0f), Tooltip("Hub height shown in the top bar (m).")]
         private float hubHeight = 94f;
 
+        // Shared by the trend chart and the power curve scatter. Min 0.5 s of simulation time apart, so a 5 min
+        // window holds ~600 samples at any simulation speed.
+        private readonly TelemetryHistory history = new TelemetryHistory(1024, 0.5);
+
         private ITurbineTelemetrySource source;
         private StatusBarPresenter statusBar;
         private ValueCardsPresenter valueCards;
         private AlertsPresenter alerts;
         private TrendChartPresenter trendChart;
+        private PowerCurvePresenter powerCurve;
 
         private void OnEnable()
         {
@@ -54,7 +59,8 @@ namespace WindFarm.UI
             statusBar = new StatusBarPresenter(root, specs, classText);
             valueCards = new ValueCardsPresenter(root, specs);
             alerts = new AlertsPresenter(root, specs);
-            trendChart = new TrendChartPresenter(root, specs);
+            trendChart = new TrendChartPresenter(root, specs, history);
+            powerCurve = new PowerCurvePresenter(root, specs, history);
 
             source = simulator;
             source.TelemetryUpdated += HandleTelemetry;
@@ -79,6 +85,7 @@ namespace WindFarm.UI
             alerts = null;
             trendChart?.Dispose();
             trendChart = null;
+            powerCurve = null;
         }
 
         private void Update()
@@ -88,14 +95,17 @@ namespace WindFarm.UI
             valueCards?.Tick(deltaTime);
             alerts?.Tick(deltaTime);
             trendChart?.Tick(deltaTime);
+            powerCurve?.Tick(deltaTime);
         }
 
         private void HandleTelemetry(TurbineTelemetry telemetry)
         {
+            history.Add(telemetry);
             statusBar.Show(telemetry, simulator.SimulationSpeed);
             valueCards.Show(telemetry);
             alerts.Show(telemetry);
             trendChart.Show(telemetry);
+            powerCurve.Show(telemetry);
         }
 
 #if UNITY_EDITOR

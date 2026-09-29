@@ -479,6 +479,7 @@
     --chart-series: #5CC6E0;
     --chart-grid: rgba(140, 162, 174, 0.16);
     --chart-muted: #8CA2AE;
+    --chart-curve: #B7C7CF;
     --chart-warn: #F0B03C;
     --chart-crit: #EF5A4B;
     --chart-surface: #13232D;
@@ -499,6 +500,19 @@
 
 .chart__tick--x {
     translate: -50% 0;
+}
+
+.chart__unit {
+    color: var(--muted);
+}
+
+/* Live operating point label on the power curve. */
+.chart__live-label {
+    position: absolute;
+    -unity-font-definition: url("Fonts/IBMPlexMono-Medium SDF.asset");
+    font-size: 11px;
+    color: var(--ink);
+    white-space: nowrap;
 }
 
 .chart__tooltip {

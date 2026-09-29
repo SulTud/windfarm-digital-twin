@@ -140,9 +140,8 @@
                         <ui:Label class="card__label" text="POWER CURVE" />
                         <ui:Label class="card__aside card__aside--accent" text="● LIVE" />
                     </ui:VisualElement>
-                    <ui:VisualElement name="curve-chart" class="chart chart--curve">
-                        <ui:Label class="chart__placeholder" text="power curve" />
-                    </ui:VisualElement>
+                    <!-- PowerCurvePresenter adds a Painter2D PowerCurveChart here. -->
+                    <ui:VisualElement name="curve-chart" class="chart chart--curve" />
                 </ui:VisualElement>
             </ui:VisualElement>
         </ui:VisualElement>

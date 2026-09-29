@@ -101,6 +101,20 @@ namespace WindFarm.Simulation
         public float RatedWindSpeed =>
             Mathf.Pow(RatedPowerWatts / (0.5f * AirDensity * SweptArea * MaxPowerCoefficient * DrivetrainEfficiency), 1f / 3f);
 
+        /// <summary>
+        /// Steady-state power curve (MW), the curve a datasheet shows: zero outside cut-in..cut-out, otherwise
+        /// ½·ρ·A·Cp·η·v³ capped at rated power. Same formula as <see cref="PowerModel"/> once the rotor has settled.
+        /// </summary>
+        public float PowerCurveMW(float windSpeed)
+        {
+            if (windSpeed < CutInWindSpeed || windSpeed > CutOutWindSpeed)
+                return 0f;
+
+            float watts = 0.5f * AirDensity * SweptArea * MaxPowerCoefficient * DrivetrainEfficiency
+                          * windSpeed * windSpeed * windSpeed;
+            return Mathf.Min(watts, RatedPowerWatts) / 1_000_000f;
+        }
+
         /// <summary>Equilibrium winding temperature at rated speed and rated power (°C).</summary>
         public float RatedGeneratorTemperature => AmbientTemperature + FrictionTemperatureRise + LoadTemperatureRise;
     }

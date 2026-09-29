@@ -6,8 +6,8 @@ using WindFarm.Simulation;
 namespace WindFarm.UI
 {
     /// <summary>
-    /// "Trend · last 5 min" card: records telemetry into a ring buffer and feeds the selected series (power, wind or
-    /// generator temperature) to the <see cref="TrendChart"/> with a fixed, meaningful scale and reference lines.
+    /// "Trend · last 5 min" card: feeds the selected series (power, wind or generator temperature) from the shared
+    /// telemetry history to the <see cref="TrendChart"/> with a fixed, meaningful scale and reference lines.
     ///
     /// The time axis is simulation time. Between 5 Hz samples "now" is extrapolated from the observed simulation rate,
     /// so the chart scrolls smoothly even at 20x, where each sample jumps 4 s ahead.
@@ -21,9 +21,7 @@ namespace WindFarm.UI
             Temperature,
         }
 
-        private const double WindowSeconds = 300.0;
-        private const double SampleInterval = 0.5;       // s of simulation time; 600 points per window at most
-        private const int HistoryCapacity = 1024;
+        public const double WindowSeconds = 300.0;
         private const float HeadSmoothingTime = 0.6f;     // s; same as the value cards
         private const float RateSmoothing = 0.3f;         // blend factor for the observed simulation rate
 
@@ -32,7 +30,7 @@ namespace WindFarm.UI
         private static readonly Func<TelemetrySample, float> TemperatureOf = sample => sample.Temperature;
 
         private readonly TurbineSpecs specs;
-        private readonly TelemetryHistory history = new TelemetryHistory(HistoryCapacity, SampleInterval);
+        private readonly TelemetryHistory history;
         private readonly TrendChart chart;
         private readonly Button powerTab;
         private readonly Button windTab;
@@ -53,9 +51,10 @@ namespace WindFarm.UI
         private float lastSampleRealTime;
         private double simulationRate = 1.0;             // simulation seconds per real second
 
-        public TrendChartPresenter(VisualElement root, TurbineSpecs specs)
+        public TrendChartPresenter(VisualElement root, TurbineSpecs specs, TelemetryHistory history)
         {
             this.specs = specs;
+            this.history = history;
 
             VisualElement container = root.Require<VisualElement>("trend-chart");
             container.Clear();                            // remove the skeleton placeholder
@@ -109,7 +108,6 @@ namespace WindFarm.UI
             latest = telemetry;
             lastSimulationTime = telemetry.SimulationTime;
             lastSampleRealTime = realTime;
-            history.Add(telemetry);
         }
 
         /// <summary>Called every frame with the unscaled frame time.</summary>
