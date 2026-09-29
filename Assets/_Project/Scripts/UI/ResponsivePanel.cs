@@ -13,6 +13,9 @@ namespace WindFarm.UI
     ///      14 px label has the same physical size in the WebGL build as on a web page.
     ///   2. Layout: toggles USS classes on the root (portrait / landscape / short) so the stylesheet can rearrange
     ///      the dashboard. USS has no media queries; this plays that role.
+    ///   3. Safe area: reports the screen edges covered by a notch or the home indicator (logical px), so the layout
+    ///      can keep controls out of them (CSS env(safe-area-inset-*) in WebGL, Screen.safeArea elsewhere, which
+    ///      the Device Simulator also fills in).
     /// </summary>
     [DisallowMultipleComponent]
     [RequireComponent(typeof(UIDocument))]
@@ -50,6 +53,9 @@ namespace WindFarm.UI
 #if UNITY_WEBGL && !UNITY_EDITOR
         [DllImport("__Internal")]
         private static extern float WindFarm_GetCanvasCssWidth();
+
+        [DllImport("__Internal")]
+        private static extern float WindFarm_GetSafeAreaInset(int side);
 #endif
 
         private bool hasLayout;
@@ -57,8 +63,14 @@ namespace WindFarm.UI
         /// <summary>Raised when the layout switches between portrait (true) and landscape (false), and once at startup.</summary>
         public event Action<bool> LayoutChanged;
 
+        /// <summary>Raised when the safe-area insets change (rotation, browser toolbar, another device in the simulator).</summary>
+        public event Action<SafeAreaInsets> SafeAreaChanged;
+
         /// <summary>True while the phone (portrait) layout is active.</summary>
         public bool IsPortrait { get; private set; }
+
+        /// <summary>Screen edges covered by a notch or the home indicator, in logical px.</summary>
+        public SafeAreaInsets SafeArea { get; private set; }
 
         private void Awake()
         {
@@ -126,6 +138,29 @@ namespace WindFarm.UI
                 settings.scaleMode = PanelScaleMode.ConstantPixelSize;
             if (!Mathf.Approximately(settings.scale, scale))
                 settings.scale = scale;
+
+            SafeAreaInsets safeArea = DetectSafeArea(scale);
+            if (safeArea.Equals(SafeArea))
+                return;
+
+            SafeArea = safeArea;
+            SafeAreaChanged?.Invoke(safeArea);
+        }
+
+        /// <summary>Safe-area insets in logical px for the given panel scale (physical px per logical px).</summary>
+        private static SafeAreaInsets DetectSafeArea(float scale)
+        {
+#if UNITY_WEBGL && !UNITY_EDITOR
+            // Screen.safeArea is always the full screen in a browser; the page exposes the real insets as CSS values,
+            // which are already in CSS (logical) px.
+            return new SafeAreaInsets(WindFarm_GetSafeAreaInset(0), WindFarm_GetSafeAreaInset(1),
+                WindFarm_GetSafeAreaInset(2), WindFarm_GetSafeAreaInset(3));
+#else
+            // Screen space has its origin bottom-left.
+            Rect safe = Screen.safeArea;
+            return new SafeAreaInsets((Screen.height - safe.yMax) / scale, (Screen.width - safe.xMax) / scale,
+                safe.yMin / scale, safe.xMin / scale);
+#endif
         }
 
         /// <summary>Physical pixels per logical (CSS) pixel.</summary>

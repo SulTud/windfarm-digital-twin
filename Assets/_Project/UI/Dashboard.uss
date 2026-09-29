@@ -696,10 +696,15 @@
 .wind-tick--rated { left: 36.7%; }
 .wind-tick--cut-out { left: 83.3%; }
 
-/* ---------- Bottom sheet (phone only) ---------- */
+/* ---------- Bottom sheet (phone only, see the portrait section for sliding) ---------- */
 
 .sheet {
     display: none;
+}
+
+/* Tap and swipe target: the whole strip, not just the thin handle. */
+.sheet__header {
+    padding-top: 8px;
 }
 
 .sheet__handle {
@@ -712,6 +717,108 @@
 
 .sheet__tabs {
     margin-top: 8px;
+}
+
+/* Larger touch targets than the chart tabs (four classes: outranks the portrait tab size further down). */
+.dashboard .sheet .sheet__tabs .tab {
+    font-size: 13px;
+    padding: 6px 14px;
+    margin-left: 0;
+    margin-right: 4px;
+}
+
+/*
+ * Same height for every page, so switching tabs does not resize the sheet (default here, measured by DashboardLayout). Hidden while closed: the top of the
+ * content stays on screen under the header (see .sheet margin-bottom) and must not catch taps there.
+ * The delay hides it only after the fade-out.
+ */
+.sheet__content {
+    height: 248px;
+    margin-top: 12px;
+    opacity: 0;
+    visibility: hidden;
+    transition-property: opacity, visibility;
+    transition-duration: 0.2s, 0s;
+    transition-delay: 0s, 0.2s;
+}
+
+.sheet--open .sheet__content {
+    opacity: 1;
+    visibility: visible;
+    transition-delay: 0s, 0s;
+}
+
+.sheet__page {
+    display: none;
+    flex-grow: 1;
+}
+
+.sheet__page--on {
+    display: flex;
+}
+
+/* The sheet itself is the card: cards moved in here lose their own frame (outranks .dashboard--portrait .card). */
+.dashboard .sheet .card {
+    flex-grow: 1;
+    margin: 0;
+    padding: 0;
+    border-width: 0;
+    background-color: rgba(0, 0, 0, 0);
+}
+
+.sheet .chart {
+    flex-grow: 1;
+    height: auto;
+}
+
+.dashboard .sheet .card__header .tab {
+    padding: 4px 10px;
+}
+
+/* More page: energy, simulation speed and data source, separated by hairlines. */
+.sheet-more__section {
+    padding-bottom: 12px;
+    margin-bottom: 12px;
+    border-bottom-width: 1px;
+    border-color: var(--line);
+}
+
+.sheet-more__section--last {
+    padding-bottom: 0;
+    margin-bottom: 0;
+    border-bottom-width: 0;
+}
+
+.dashboard .sheet .energy-card {
+    flex-grow: 0;
+}
+
+.sheet .dock__group--speed {
+    margin-right: 0;
+}
+
+.dashboard .sheet .segmented__item {
+    flex-grow: 1;
+    padding: 8px 0;
+    font-size: 14px;
+}
+
+.sheet-more__meta {
+    flex-direction: row;
+    margin-top: 6px;
+}
+
+.sheet .top-bar__meta {
+    justify-content: flex-start;
+    flex-grow: 0;
+    flex-basis: auto;
+}
+
+.sheet-more__note {
+    margin-top: 6px;
+    font-size: 12px;
+    color: var(--muted);
+    white-space: normal;
 }
 
 /* =================== Phone (portrait) =================== */
@@ -757,13 +864,11 @@
     font-size: 14px;
 }
 
-.dashboard--portrait .top-bar__meta,
+/* Charts, energy, sim speed and data source are not hidden: DashboardLayout moves them into the bottom sheet. */
 .dashboard--portrait .right-column,
-.dashboard--portrait .energy-card,
 .dashboard--portrait .card__aside--wide,
 .dashboard--portrait .card__footer--wide,
 .dashboard--portrait .temp-scale,
-.dashboard--portrait #sim-speed-group,
 .dashboard--portrait #xray-group {
     display: none;
 }
@@ -885,15 +990,26 @@
     margin-right: 0;
 }
 
+/*
+ * The sheet stays in the layout at its full height, but the negative bottom margin (= content height + margin)
+ * lets the content hang below the screen edge, so only the header reserves space above the dock. Opening slides the
+ * whole sheet up by the same amount, over the value cards and the dock. Translate animates on the GPU, no relayout.
+ * DashboardLayout measures the content height (open sheet ends just above the power card) and sets the margin and
+ * the translate inline; -260 matches the 248 + 12 defaults until then.
+ * The bottom padding is small because the safe-area spacer adds the home indicator height.
+ */
 .dashboard--portrait .sheet {
     display: flex;
-    height: 84px;
-    padding: 8px 16px 24px 16px;
+    margin-bottom: -260px;
+    padding: 0 16px 12px 16px;
     background-color: var(--panel-solid);
     border-width: 1px 1px 0 1px;
     border-color: var(--line-strong);
     border-top-left-radius: 18px;
     border-top-right-radius: 18px;
+    transition-property: translate;
+    transition-duration: 0.3s;
+    transition-timing-function: ease-out-cubic;
 }
 
 /* =================== Low landscape screens =================== */

@@ -15,7 +15,7 @@
                 </ui:VisualElement>
                 <ui:Label name="state-explanation" class="state-explanation" picking-mode="Ignore" text="Wind above cut-in, below rated. Rotor follows the wind." />
             </ui:VisualElement>
-            <ui:VisualElement class="top-bar__meta" picking-mode="Ignore">
+            <ui:VisualElement name="top-bar-meta" class="top-bar__meta" picking-mode="Ignore">
                 <ui:Label name="sim-clock" class="meta-text" text="SIM 1× · 00:00:00" />
                 <ui:Label name="data-source" class="source-badge" text="Source: Mock SCADA" />
             </ui:VisualElement>
@@ -175,15 +175,34 @@
             </ui:VisualElement>
         </ui:VisualElement>
 
-        <!-- Phone only: bottom sheet (peek). Opens on tab tap; grab area sits above the iOS home indicator. -->
+        <!--
+            Phone only: bottom sheet. Closed it shows the handle and the tabs; a tab tap or a swipe on the header slides
+            it open (BottomSheet). DashboardLayout moves the chart cards and the More items into the pages in portrait.
+            The safe-area spacer keeps the content above the iOS home indicator while the panel still paints under it.
+        -->
         <ui:VisualElement name="sheet" class="sheet">
-            <ui:VisualElement class="sheet__handle" />
-            <ui:VisualElement class="tabs sheet__tabs">
-                <ui:Button name="sheet-tab-trends" class="tab tab--on" text="TRENDS" />
-                <ui:Button name="sheet-tab-curve" class="tab" text="CURVE" />
-                <ui:Button name="sheet-tab-more" class="tab" text="MORE" />
+            <ui:VisualElement name="sheet-header" class="sheet__header">
+                <ui:VisualElement class="sheet__handle" picking-mode="Ignore" />
+                <ui:VisualElement class="tabs sheet__tabs" picking-mode="Ignore">
+                    <ui:Button name="sheet-tab-trends" class="tab tab--on" text="TRENDS" />
+                    <ui:Button name="sheet-tab-curve" class="tab" text="CURVE" />
+                    <ui:Button name="sheet-tab-more" class="tab" text="MORE" />
+                </ui:VisualElement>
             </ui:VisualElement>
-            <ui:VisualElement name="sheet-content" class="sheet__content" picking-mode="Ignore" />
+            <ui:VisualElement name="sheet-content" class="sheet__content" picking-mode="Ignore">
+                <ui:VisualElement name="sheet-page-trends" class="sheet__page sheet__page--on" picking-mode="Ignore" />
+                <ui:VisualElement name="sheet-page-curve" class="sheet__page" picking-mode="Ignore" />
+                <ui:VisualElement name="sheet-page-more" class="sheet__page" picking-mode="Ignore">
+                    <ui:VisualElement name="sheet-more-energy" class="sheet-more__section" picking-mode="Ignore" />
+                    <ui:VisualElement name="sheet-more-speed" class="sheet-more__section" picking-mode="Ignore" />
+                    <ui:VisualElement class="sheet-more__section sheet-more__section--last" picking-mode="Ignore">
+                        <ui:Label class="card__label" text="DATA SOURCE" />
+                        <ui:VisualElement name="sheet-more-meta" class="sheet-more__meta" picking-mode="Ignore" />
+                        <ui:Label class="sheet-more__note" text="Physics-based simulator behind one data interface. A live SCADA feed can replace it without changing the dashboard." />
+                    </ui:VisualElement>
+                </ui:VisualElement>
+            </ui:VisualElement>
+            <ui:VisualElement name="sheet-safe-area" class="sheet__safe-area" picking-mode="Ignore" />
         </ui:VisualElement>
     </ui:VisualElement>
 </ui:UXML>
