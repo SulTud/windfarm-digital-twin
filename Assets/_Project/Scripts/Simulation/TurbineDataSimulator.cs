@@ -8,7 +8,8 @@ namespace WindFarm.Simulation
     /// Orchestrator that produces mock sensor data for a single wind turbine.
     ///
     /// Causal chain (in this order on every physics step):
-    ///   Wind → Controller (state) → Rotor RPM (inertia lag) → Power (k·ω³) → Generator temperature (thermal lag)
+    ///   Wind → Controller (state) → Pitch (PI + rate limit) → Rotor (torque balance J·dω/dt = T_aero - T_gen)
+    ///   → Power (generator torque · ω · η) → Generator temperature (thermal lag)
     ///
     /// Physics advances with a fixed timestep, so results are independent of the frame rate (FPS).
     /// Telemetry is published at a separate, lower sampling rate — just like a real SCADA system.
@@ -42,8 +43,8 @@ namespace WindFarm.Simulation
 
         private WindModel wind;
         private TurbineController controller;
+        private PitchController pitch;
         private RotorModel rotor;
-        private PowerModel power;
         private ThermalModel thermal;
         private Random sensorRandom;
 
@@ -118,8 +119,8 @@ namespace WindFarm.Simulation
             wind = new WindModel(windConditions, new Random(masterRandom.Next()));
             sensorRandom = new Random(masterRandom.Next());
             controller = new TurbineController(specs);
+            pitch = new PitchController(specs);
             rotor = new RotorModel(specs);
-            power = new PowerModel(specs);
             thermal = new ThermalModel(specs);
         }
 
@@ -140,8 +141,9 @@ namespace WindFarm.Simulation
                 OperatingStateChanged?.Invoke(previousState, controller.State);
 
             bool connected = controller.IsGeneratorConnected;
-            rotor.Step(deltaTime, windSpeed, connected);
-            currentPowerMW = power.CalculateElectricalPowerMW(rotor.Rpm, windSpeed, connected);
+            pitch.Step(deltaTime, rotor.Omega, controller.State, controller.AveragedWindSpeed);
+            rotor.Step(deltaTime, windSpeed, pitch.Angle, connected);
+            currentPowerMW = PowerModel.ElectricalPowerMW(specs, rotor.Omega, rotor.GeneratorTorque);
             thermal.Step(deltaTime, rotor.Rpm, currentPowerMW);
 
             totalEnergyMWh += currentPowerMW * deltaTime / 3600.0;

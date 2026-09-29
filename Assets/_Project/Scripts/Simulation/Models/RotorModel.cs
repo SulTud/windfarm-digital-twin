@@ -4,41 +4,71 @@ using UnityEngine;
 namespace WindFarm.Simulation
 {
     /// <summary>
-    /// Models rotor speed as a first-order lag: the rotor is a heavy mass, so even if the wind changes instantly
-    /// the speed approaches its target exponentially ("slowly").
+    /// Rotor speed from a one-mass drivetrain torque balance, the core of every wind turbine simulator (OpenFAST's
+    /// rigid drivetrain, the simplified models of IEC 61400-27-1):
     ///
-    /// The target speed is derived from the optimal tip speed ratio (λ = ωR / v):
-    ///   RPM_target = λ_opt · v · 60 / (2πR), clamped to [MinRpm, RatedRpm].
-    /// Above rated speed, pitch control holds the speed constant (the physical meaning of the clamp).
+    ///   J · dω/dt = T_aero(ω, v, β) - T_generator(ω)
+    ///
+    /// Like Rigidbody.AddTorque instead of SmoothDamp: the rotor is not pulled toward a target speed, it accelerates
+    /// or slows down from the difference of two torques. That makes the energy exchange real: in a lull the generator
+    /// keeps loading the rotor and draws on its kinetic energy, in a gust the rotor stores energy before the power
+    /// rises. Both put measured points on either side of the steady-state power curve, as in real SCADA data.
+    ///
+    /// Start-up and shutdown are supervisory sequences, as on a real turbine, modelled as first-order lags:
+    ///   - connected but below minimum speed: spin-up with the blades pitching in, generator not yet synchronised;
+    ///   - disconnected (Idle, StormShutdown): run-down with the blades feathered (aerodynamic brake), then parked.
     /// </summary>
     public sealed class RotorModel
     {
-        private const float BrakingTimeConstantFactor = 0.6f; // mechanical brake + feathering is faster than free acceleration
+        private const float BrakingTimeConstantFactor = 0.6f; // feathering + brake stops faster than a free spin-up
+        private const float SpinUpOvershoot = 1.05f;          // spin-up target just above the minimum speed, so it is crossed
 
         private readonly TurbineSpecs specs;
-
-        public float Rpm { get; private set; }
 
         public RotorModel(TurbineSpecs specs)
         {
             this.specs = specs ?? throw new ArgumentNullException(nameof(specs));
         }
 
-        public void Step(float deltaTime, float windSpeed, bool isOperating)
-        {
-            float targetRpm = isOperating ? CalculateTargetRpm(windSpeed) : 0f;
-            float timeConstant = isOperating
-                ? specs.RotorTimeConstant
-                : specs.RotorTimeConstant * BrakingTimeConstantFactor;
+        /// <summary>Rotor speed (rad/s).</summary>
+        public float Omega { get; private set; }
 
-            float alpha = 1f - Mathf.Exp(-deltaTime / timeConstant);
-            Rpm += (targetRpm - Rpm) * alpha;
+        public float Rpm => Omega / PowerModel.RpmToRadPerSec;
+
+        /// <summary>Generator torque applied in the last step (N·m on the rotor shaft); 0 while not synchronised.</summary>
+        public float GeneratorTorque { get; private set; }
+
+        public void Step(float deltaTime, float windSpeed, float pitchDegrees, bool generatorConnected)
+        {
+            if (!generatorConnected)
+            {
+                GeneratorTorque = 0f;
+                Lag(0f, specs.RotorTimeConstant * BrakingTimeConstantFactor, deltaTime);
+                return;
+            }
+
+            float minOmega = specs.MinRotorRpm * PowerModel.RpmToRadPerSec;
+            if (Omega < minOmega)
+            {
+                // Start-up sequence: bring the rotor to the speed at which the generator synchronises.
+                GeneratorTorque = 0f;
+                float target = Mathf.Max(OptimalOmega(windSpeed), minOmega * SpinUpOvershoot);
+                Lag(target, specs.RotorTimeConstant, deltaTime);
+                return;
+            }
+
+            float aerodynamicTorque = Aerodynamics.Torque(specs, Omega, windSpeed, pitchDegrees);
+            GeneratorTorque = PowerModel.GeneratorTorque(specs, Omega);
+            Omega = Mathf.Max(0f, Omega + (aerodynamicTorque - GeneratorTorque) / specs.RotorInertia * deltaTime);
         }
 
-        public float CalculateTargetRpm(float windSpeed)
+        private float OptimalOmega(float windSpeed) =>
+            Mathf.Min(specs.OptimalTipSpeedRatio * windSpeed / specs.RotorRadius, specs.RatedRotorRpm * PowerModel.RpmToRadPerSec);
+
+        private void Lag(float target, float timeConstant, float deltaTime)
         {
-            float optimalRpm = specs.OptimalTipSpeedRatio * windSpeed * 60f / (2f * Mathf.PI * specs.RotorRadius);
-            return Mathf.Clamp(optimalRpm, specs.MinRotorRpm, specs.RatedRotorRpm);
+            float alpha = 1f - Mathf.Exp(-deltaTime / timeConstant);
+            Omega += (target - Omega) * alpha;
         }
     }
 }

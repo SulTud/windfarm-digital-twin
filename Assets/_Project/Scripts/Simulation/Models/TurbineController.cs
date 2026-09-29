@@ -33,6 +33,9 @@ namespace WindFarm.Simulation
 
         public TurbineOperatingState State { get; private set; } = TurbineOperatingState.Idle;
 
+        /// <summary>Wind speed averaged over <see cref="TurbineSpecs.ControlAveragingTime"/> (m/s), the basis of every decision.</summary>
+        public float AveragedWindSpeed => averagedWindSpeed;
+
         public bool IsGeneratorConnected =>
             State == TurbineOperatingState.Producing || State == TurbineOperatingState.RatedPower;
 

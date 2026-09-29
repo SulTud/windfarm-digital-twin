@@ -26,11 +26,30 @@ namespace WindFarm.Simulation
         [field: SerializeField, Range(0.1f, 0.593f), Tooltip("Maximum power coefficient Cp (Betz limit is 0.593).")]
         public float MaxPowerCoefficient { get; private set; } = 0.45f;
 
-        // τ = J·ω² / (3·P) for a rotor under optimal torque control (J ≈ 2.4e7 kg·m² for this class).
-        // Gives ~10 s at 5 m/s, ~7 s at 8 m/s and ~5 s near rated wind; 7 s represents a typical mean wind.
-        [field: SerializeField, Min(0.1f), Tooltip("Rotor inertia time constant (s). Higher values make the rotor respond more slowly to the wind. " +
-                                                   "Realistic range for a 3 MW turbine is 5-10 s.")]
+        // Blades + hub + generator referred to the rotor shaft. The NREL 5-MW rotor has ~3.5e7 kg·m² (61.5 m blades);
+        // mass scales steeply with length, so ~2.4e7 for 54.6 m blades. Under optimal torque control this gives a
+        // response time τ = J·ω² / (3·P) of ~10 s at 5 m/s and ~5 s near rated wind.
+        [field: SerializeField, Min(1e5f), Tooltip("Rotational inertia of rotor and drivetrain on the rotor shaft (kg·m²). " +
+                                                   "Heavier rotors react more slowly to the wind and store more energy.")]
+        public float RotorInertia { get; private set; } = 2.4e7f;
+
+        [field: SerializeField, Min(0.1f), Tooltip("Time constant of the start-up (spin-up to generator sync speed) and shutdown " +
+                                                   "sequences (s). While producing, the rotor follows the torque balance instead.")]
         public float RotorTimeConstant { get; private set; } = 7f;
+
+        [field: Header("Pitch")]
+        [field: SerializeField, Min(0.5f), Tooltip("Pitch angle that reduces the power coefficient by a factor e (deg). Sets how strongly " +
+                                                   "pitching sheds power; 12 gives a typical schedule (~5 deg at 12 m/s, ~25 deg at 25 m/s).")]
+        public float PitchSensitivityAngle { get; private set; } = 12f;
+
+        [field: SerializeField, Min(0.1f), Tooltip("Maximum pitch rate of the blade drives (deg/s). Real drives move about 5-10 deg/s.")]
+        public float MaxPitchRate { get; private set; } = 8f;
+
+        [field: SerializeField, Range(0f, 90f), Tooltip("Pitch while idle below cut-in (deg). Real turbines park near feather.")]
+        public float IdlePitch { get; private set; } = 70f;
+
+        [field: SerializeField, Range(0f, 90f), Tooltip("Pitch during storm shutdown (deg). 90 = fully feathered, chord parallel to the wind.")]
+        public float FeatherPitch { get; private set; } = 90f;
 
         [field: Header("Generator")]
         [field: SerializeField, Min(0.1f), Tooltip("Rated electrical power (MW).")]
@@ -96,24 +115,15 @@ namespace WindFarm.Simulation
         public float RatedPowerWatts => RatedPowerMW * 1_000_000f;
 
         /// <summary>
-        /// Wind speed at which rated power is reached (m/s): solves P_rated = ½·ρ·A·Cp·η·v³ (~10.6 m/s with the defaults).
+        /// Wind speed at which the steady-state curve reaches rated power (m/s, ~10.6 with the defaults).
         /// </summary>
-        public float RatedWindSpeed =>
-            Mathf.Pow(RatedPowerWatts / (0.5f * AirDensity * SweptArea * MaxPowerCoefficient * DrivetrainEfficiency), 1f / 3f);
+        public float RatedWindSpeed => SteadyStatePowerCurve.RatedWindSpeed(this);
 
         /// <summary>
-        /// Steady-state power curve (MW), the curve a datasheet shows: zero outside cut-in..cut-out, otherwise
-        /// ½·ρ·A·Cp·η·v³ capped at rated power. Same formula as <see cref="PowerModel"/> once the rotor has settled.
+        /// Steady-state power curve (MW), the curve a datasheet shows, computed from the simulator's own aerodynamics
+        /// and control law (see <see cref="SteadyStatePowerCurve"/>). Zero outside cut-in..cut-out.
         /// </summary>
-        public float PowerCurveMW(float windSpeed)
-        {
-            if (windSpeed < CutInWindSpeed || windSpeed > CutOutWindSpeed)
-                return 0f;
-
-            float watts = 0.5f * AirDensity * SweptArea * MaxPowerCoefficient * DrivetrainEfficiency
-                          * windSpeed * windSpeed * windSpeed;
-            return Mathf.Min(watts, RatedPowerWatts) / 1_000_000f;
-        }
+        public float PowerCurveMW(float windSpeed) => SteadyStatePowerCurve.PowerMW(this, windSpeed);
 
         /// <summary>Equilibrium winding temperature at rated speed and rated power (°C).</summary>
         public float RatedGeneratorTemperature => AmbientTemperature + FrictionTemperatureRise + LoadTemperatureRise;

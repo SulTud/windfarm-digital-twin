@@ -1,48 +1,67 @@
-using System;
 using UnityEngine;
 
 namespace WindFarm.Simulation
 {
     /// <summary>
-    /// Computes electrical power from rotor speed (stateless).
+    /// Generator torque control and electrical power (stateless), following the variable-speed control structure of
+    /// the NREL 5-MW reference turbine (Jonkman et al., 2009), the de facto reference in wind turbine simulation:
     ///
-    /// In the partial-load region the standard torque control law used by real turbines is applied:
-    ///   T = k·ω²  →  P = k·ω³,   k = ½·ρ·π·R⁵·Cp_max / λ_opt³
-    /// This way power follows the rotor rather than the wind: as the rotor slowly speeds up, power rises with it.
+    ///   Region 1.5  min speed .. +5 %   linear torque ramp from zero, so the rotor never runs below its minimum
+    ///                                   speed while connected (λ is then above optimum at low wind)
+    ///   Region 2    above that          T = k·ω², k = ½·ρ·π·R⁵·Cp_max / λ_opt³ (holds λ at λ_opt in steady state)
+    ///   Region 3    k·ω³ >= rated       constant power, T = P_rated / ω; the pitch controller holds the speed
     ///
-    /// Physical limits:
-    /// - Power available in the wind (½·ρ·A·Cp·v³) cannot be exceeded — if the wind drops suddenly, power drops too.
-    /// - Rated power cannot be exceeded (pitch control sheds the excess).
+    /// Torques are on the rotor (low-speed) shaft. Unlike the earlier model, power is NOT capped by the power in the
+    /// wind: when the wind drops, the generator keeps drawing k·ω³ while the heavy rotor slows down, so for a few
+    /// seconds the output is above the steady-state curve, fed by the rotor's kinetic energy (~26 MJ at rated speed).
+    /// Real SCADA data scatters on both sides of the power curve for this reason.
     /// </summary>
-    public sealed class PowerModel
+    public static class PowerModel
     {
-        private const float RpmToRadPerSec = 2f * Mathf.PI / 60f;
+        public const float RpmToRadPerSec = 2f * Mathf.PI / 60f;
 
-        private readonly TurbineSpecs specs;
+        // Region 1.5 width above the minimum speed. Narrow keeps the steady state close to λ_opt; 5 % is still gentle
+        // enough for the 0.05 s explicit physics step (torque slope / inertia · step ≈ 0.03).
+        private const float Region15Width = 0.05f;
 
-        public PowerModel(TurbineSpecs specs)
+        /// <summary>Optimal-mode gain k (N·m·s²).</summary>
+        public static float OptimalTorqueGain(TurbineSpecs specs)
         {
-            this.specs = specs ?? throw new ArgumentNullException(nameof(specs));
+            float lambda = specs.OptimalTipSpeedRatio;
+            return 0.5f * specs.AirDensity * Mathf.PI * Mathf.Pow(specs.RotorRadius, 5f) * specs.MaxPowerCoefficient
+                   / (lambda * lambda * lambda);
         }
 
-        public float CalculateElectricalPowerMW(float rotorRpm, float windSpeed, bool generatorConnected)
+        /// <summary>Mechanical power the generator may take at rated output (W): rated electrical / efficiency.</summary>
+        public static float RatedMechanicalPower(TurbineSpecs specs) => specs.RatedPowerWatts / specs.DrivetrainEfficiency;
+
+        /// <summary>Generator torque demanded by the converter at a rotor speed (N·m on the rotor shaft).</summary>
+        public static float GeneratorTorque(TurbineSpecs specs, float omega)
         {
-            if (!generatorConnected || rotorRpm <= 0f)
+            float minOmega = specs.MinRotorRpm * RpmToRadPerSec;
+            if (omega <= minOmega)
                 return 0f;
 
-            float omega = rotorRpm * RpmToRadPerSec;
-            float tipSpeedRatioCubed = Mathf.Pow(specs.OptimalTipSpeedRatio, 3f);
-            float torqueGain = 0.5f * specs.AirDensity * Mathf.PI * Mathf.Pow(specs.RotorRadius, 5f)
-                               * specs.MaxPowerCoefficient / tipSpeedRatioCubed;
+            float k = OptimalTorqueGain(specs);
+            float ratedPower = RatedMechanicalPower(specs);
 
-            float controllerPower = torqueGain * omega * omega * omega;
-            float availableWindPower = 0.5f * specs.AirDensity * specs.SweptArea
-                                       * specs.MaxPowerCoefficient * windSpeed * windSpeed * windSpeed;
+            // Region 3: constant power once the optimal law would exceed it.
+            if (k * omega * omega * omega >= ratedPower)
+                return ratedPower / omega;
 
-            float mechanicalPower = Mathf.Min(controllerPower, availableWindPower);
-            float electricalPower = Mathf.Min(mechanicalPower * specs.DrivetrainEfficiency, specs.RatedPowerWatts);
+            // Region 1.5: ramp up to the optimal law.
+            float rampEnd = minOmega * (1f + Region15Width);
+            if (omega < rampEnd)
+                return k * rampEnd * rampEnd * (omega - minOmega) / (rampEnd - minOmega);
 
-            return electricalPower / 1_000_000f;
+            return k * omega * omega;
+        }
+
+        /// <summary>Electrical output (MW) for a rotor speed and the generator torque at it.</summary>
+        public static float ElectricalPowerMW(TurbineSpecs specs, float omega, float generatorTorque)
+        {
+            float watts = Mathf.Max(0f, generatorTorque * omega) * specs.DrivetrainEfficiency;
+            return Mathf.Min(watts, specs.RatedPowerWatts) / 1_000_000f;
         }
     }
 }
