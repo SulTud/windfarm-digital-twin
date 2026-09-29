@@ -1079,6 +1079,19 @@
     -unity-text-align: upper-center;
 }
 
+/* Debug readout from WindFarm.Debugging.FrameRateOverlay (added to the root, outside .dashboard). */
+.fps-overlay {
+    position: absolute;
+    left: 8px;
+    bottom: 50%;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background-color: rgba(0, 0, 0, 0.6);
+    -unity-font-definition: url("Fonts/IBMPlexMono-Regular SDF.asset");
+    font-size: 11px;
+    color: #FFFFFF;
+}
+
 /* =================== Low landscape screens =================== */
 
 .dashboard--short .energy-card,
