@@ -52,6 +52,14 @@ namespace WindFarm.Simulation
         [field: SerializeField, Min(0.1f), Tooltip("Wind averaging time used by the controller for its decisions (s).")]
         public float ControlAveragingTime { get; private set; } = 30f;
 
+        [field: SerializeField, Min(0f), Tooltip("A non-protective state change must be requested continuously for this long before " +
+                                                  "it happens (s). Debounces turbulence around the thresholds. Storm stops are immediate.")]
+        public float StateConfirmTime { get; private set; } = 3f;
+
+        [field: SerializeField, Min(0f), Tooltip("Minimum stop after a storm shutdown before a restart is allowed (s). " +
+                                                  "Real turbines wait about 10 min; shortened for the demo.")]
+        public float StormRestartDelay { get; private set; } = 10f;
+
         // The modelled temperature is the stator winding temperature (PT100 sensors embedded in the winding), the usual
         // SCADA generator signal. Its limit is set by the insulation class (IEC 60085): wind generators typically use
         // Class F insulation (155 °C) operated at Class B temperature rise, i.e. roughly 110-120 °C at rated power.
@@ -86,6 +94,12 @@ namespace WindFarm.Simulation
 
         public float SweptArea => Mathf.PI * RotorRadius * RotorRadius;
         public float RatedPowerWatts => RatedPowerMW * 1_000_000f;
+
+        /// <summary>
+        /// Wind speed at which rated power is reached (m/s): solves P_rated = ½·ρ·A·Cp·η·v³ (~10.6 m/s with the defaults).
+        /// </summary>
+        public float RatedWindSpeed =>
+            Mathf.Pow(RatedPowerWatts / (0.5f * AirDensity * SweptArea * MaxPowerCoefficient * DrivetrainEfficiency), 1f / 3f);
 
         /// <summary>Equilibrium winding temperature at rated speed and rated power (°C).</summary>
         public float RatedGeneratorTemperature => AmbientTemperature + FrictionTemperatureRise + LoadTemperatureRise;
