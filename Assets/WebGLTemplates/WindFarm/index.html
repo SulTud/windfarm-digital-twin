@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <!--
+      Full-window app on phones and PCs. viewport-fit=cover lets the canvas fill the areas around the notch and the
+      home indicator; the dashboard reads env(safe-area-inset-*) (CanvasMetrics.jslib) and keeps its controls out of them.
+    -->
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#0D1820">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>WTG-01 · Wind Turbine Digital Twin</title>
+#if SHOW_DIAGNOSTICS
+    <link rel="stylesheet" href="<<<TemplateData/diagnostics.css>>>">
+    <script src="<<<TemplateData/diagnostics.js>>>"></script>
+#endif
+    <style>
+      html, body {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: #0D1820;
+        /* No pull-to-refresh or rubber-band scrolling: the page never scrolls, the dashboard handles every gesture. */
+        overscroll-behavior: none;
+      }
+
+      body {
+        position: fixed;
+        inset: 0;
+        font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+        color: #E4EDF1;
+        -webkit-text-size-adjust: 100%;
+        -webkit-tap-highlight-color: transparent;
+        -webkit-touch-callout: none;
+        -webkit-user-select: none;
+        user-select: none;
+      }
+
+      /* touch-action: none sends every touch to Unity (no browser pan, pinch zoom or double-tap zoom). */
+      #unity-canvas {
+        position: fixed;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        display: block;
+        outline: none;
+        touch-action: none;
+        background: #0D1820;
+      }
+
+      #loader {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 14px;
+        padding: 0 32px;
+        background: #0D1820;
+        transition: opacity 0.4s;
+      }
+
+      #loader.is-done {
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      .loader__title {
+        font-size: 13px;
+        font-weight: 600;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: #8CA2AE;
+      }
+
+      .loader__bar {
+        width: min(240px, 70vw);
+        height: 4px;
+        border-radius: 2px;
+        background: rgba(140, 162, 174, 0.22);
+        overflow: hidden;
+      }
+
+      #loader-fill {
+        width: 0;
+        height: 100%;
+        border-radius: 2px;
+        background: #5CC6E0;
+        transition: width 0.2s;
+      }
+
+      #loader-error {
+        display: none;
+        max-width: 420px;
+        font-size: 14px;
+        line-height: 1.5;
+        text-align: center;
+        color: #EF5A4B;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="unity-canvas" tabindex="-1"></canvas>
+    <div id="loader">
+      <div class="loader__title">WTG-01 · Digital Twin</div>
+      <div class="loader__bar"><div id="loader-fill"></div></div>
+      <div id="loader-error"></div>
+    </div>
+#if SHOW_DIAGNOSTICS
+    <img id="diagnostics-icon" src="TemplateData/webmemd-icon.png" style="position: fixed; right: 0; bottom: 10px;">
+#endif
+    <script src="Build/{{{ LOADER_FILENAME }}}"></script>
+    <script>
+      var loader = document.querySelector("#loader");
+      var loaderFill = document.querySelector("#loader-fill");
+      var loaderError = document.querySelector("#loader-error");
+
+      function showError(message) {
+        loaderError.textContent = message;
+        loaderError.style.display = "block";
+        loader.classList.remove("is-done");
+      }
+
+      // iOS Safari ignores user-scalable=no for pinch zoom; these gesture events are its own and can be cancelled.
+      ["gesturestart", "gesturechange", "gestureend"].forEach(function (type) {
+        document.addEventListener(type, function (e) { e.preventDefault(); }, { passive: false });
+      });
+
+      var config = {
+        arguments: [],
+        dataUrl: "Build/{{{ DATA_FILENAME }}}",
+        frameworkUrl: "Build/{{{ FRAMEWORK_FILENAME }}}",
+#if USE_THREADS
+        workerUrl: "Build/{{{ WORKER_FILENAME }}}",
+#endif
+#if USE_WASM
+        codeUrl: "Build/{{{ CODE_FILENAME }}}",
+#endif
+#if SYMBOLS_FILENAME
+        symbolsUrl: "Build/{{{ SYMBOLS_FILENAME }}}",
+#endif
+        streamingAssetsUrl: "StreamingAssets",
+        companyName: {{{ JSON.stringify(COMPANY_NAME) }}},
+        productName: {{{ JSON.stringify(PRODUCT_NAME) }}},
+        productVersion: {{{ JSON.stringify(PRODUCT_VERSION) }}},
+        // Render at most 2 pixels per CSS pixel: a 3x phone would otherwise draw 2.25x as many pixels for a barely
+        // visible gain. ResponsivePanel measures the real ratio, so the UI keeps its size either way.
+        devicePixelRatio: Math.min(window.devicePixelRatio || 1, 2),
+        showBanner: function (message, type) {
+          if (type === "error")
+            showError(message);
+          else
+            console.warn(message);
+        },
+      };
+
+      createUnityInstance(document.querySelector("#unity-canvas"), config, function (progress) {
+        loaderFill.style.width = (100 * progress) + "%";
+      }).then(function (unityInstance) {
+        loader.classList.add("is-done");
+#if SHOW_DIAGNOSTICS
+        document.getElementById("diagnostics-icon").onclick = function () {
+          unityDiagnostics.openDiagnosticsDiv(unityInstance.GetMetricsInfo);
+        };
+#endif
+      }).catch(function (message) {
+        showError(message);
+      });
+    </script>
+  </body>
+</html>
