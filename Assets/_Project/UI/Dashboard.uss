@@ -1012,6 +1012,18 @@
     transition-timing-function: ease-out-cubic;
 }
 
+/* While the finger drags the sheet it must stick to the finger: no transition. Declared after, so it wins. */
+.dashboard--portrait .sheet--dragging {
+    transition-duration: 0s;
+}
+
+/* Content shows as soon as a drag starts, not only once the sheet has settled open. */
+.sheet--dragging .sheet__content {
+    opacity: 1;
+    visibility: visible;
+    transition-delay: 0s, 0s;
+}
+
 /* =================== Low landscape screens =================== */
 
 .dashboard--short .energy-card,
