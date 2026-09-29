@@ -1024,6 +1024,61 @@
     transition-delay: 0s, 0s;
 }
 
+/* =================== Phone held sideways =================== */
+
+/* Sibling of .dashboard, so it sets its own font and fills the panel by itself. */
+.rotate-hint {
+    display: none;
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    align-items: center;
+    justify-content: center;
+    padding: 0 32px;
+    background-color: rgba(13, 24, 32, 0.94);
+    -unity-font-definition: url("Fonts/Barlow-Regular SDF.asset");
+}
+
+.dashboard--rotate .rotate-hint {
+    display: flex;
+}
+
+.rotate-hint__phone {
+    width: 30px;
+    height: 50px;
+    border-width: 2px;
+    border-radius: 7px;
+    border-color: var(--accent);
+    align-items: center;
+}
+
+.rotate-hint__notch {
+    width: 10px;
+    height: 2px;
+    margin-top: 4px;
+    border-radius: 1px;
+    background-color: var(--accent);
+}
+
+.rotate-hint__title {
+    margin-top: 16px;
+    -unity-font-definition: url("Fonts/BarlowCondensed-SemiBold SDF.asset");
+    font-size: 20px;
+    letter-spacing: 0.4px;
+    color: var(--ink);
+}
+
+.rotate-hint__message {
+    margin-top: 6px;
+    max-width: 360px;
+    font-size: 14px;
+    color: var(--ink-2);
+    white-space: normal;
+    -unity-text-align: upper-center;
+}
+
 /* =================== Low landscape screens =================== */
 
 .dashboard--short .energy-card,

@@ -154,6 +154,7 @@ MonoBehaviour:
   scaleMultiplier: 1
   minLandscapeWidth: 720
   shortHeight: 560
+  rotateHintMaxHeight: 600
 --- !u!114 &116683435
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -11,8 +11,8 @@ namespace WindFarm.UI
     /// Makes one UI layout work on phones and PCs, like a web page:
     ///   1. Scale: the panel is laid out in CSS-like logical pixels. A phone with a 3x screen gets scale 3, so a
     ///      14 px label has the same physical size in the WebGL build as on a web page.
-    ///   2. Layout: toggles USS classes on the root (portrait / landscape / short) so the stylesheet can rearrange
-    ///      the dashboard. USS has no media queries; this plays that role.
+    ///   2. Layout: toggles USS classes on the root (portrait / landscape / short / rotate) so the stylesheet can
+    ///      rearrange the dashboard. USS has no media queries; this plays that role.
     ///   3. Safe area: reports the screen edges covered by a notch or the home indicator (logical px), so the layout
     ///      can keep controls out of them (CSS env(safe-area-inset-*) in WebGL, Screen.safeArea elsewhere, which
     ///      the Device Simulator also fills in).
@@ -24,6 +24,7 @@ namespace WindFarm.UI
         public const string PortraitClass = "dashboard--portrait";
         public const string LandscapeClass = "dashboard--landscape";
         public const string ShortClass = "dashboard--short";
+        public const string RotateClass = "dashboard--rotate";
 
         // Screens above this DPI are treated as phones in the Editor fallback (Device Simulator).
         private const float PhoneDpiThreshold = 200f;
@@ -38,6 +39,10 @@ namespace WindFarm.UI
 
         [SerializeField, Min(0f), Tooltip("Landscape screens lower than this (logical px) get the compact 'short' layout.")]
         private float shortHeight = 560f;
+
+        [SerializeField, Min(0f), Tooltip("Mobile devices held sideways with a height below this (logical px) show a " +
+            "'rotate your phone' hint over the portrait layout. Tablets stay above it.")]
+        private float rotateHintMaxHeight = 600f;
 
         private UIDocument document;
         private VisualElement root;
@@ -190,11 +195,17 @@ namespace WindFarm.UI
             if (width <= 0f || height <= 0f)
                 return;
 
-            bool portrait = width < height || width < minLandscapeWidth;
+            // A phone held sideways has too little height for any dashboard layout, and iOS Safari cannot lock the
+            // orientation. It keeps the portrait layout (no elements moving back and forth) under a rotate hint.
+            // isMobilePlatform is true for mobile browsers in WebGL and in the Device Simulator; a short desktop
+            // browser window never gets the hint.
+            bool rotateHint = Application.isMobilePlatform && width > height && height < rotateHintMaxHeight;
+            bool portrait = rotateHint || width < height || width < minLandscapeWidth;
 
             root.EnableInClassList(PortraitClass, portrait);
             root.EnableInClassList(LandscapeClass, !portrait);
             root.EnableInClassList(ShortClass, !portrait && height < shortHeight);
+            root.EnableInClassList(RotateClass, rotateHint);
 
             if (hasLayout && portrait == IsPortrait)
                 return;

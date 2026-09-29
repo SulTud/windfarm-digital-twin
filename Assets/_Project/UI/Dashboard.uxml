@@ -205,4 +205,16 @@
             <ui:VisualElement name="sheet-safe-area" class="sheet__safe-area" picking-mode="Ignore" />
         </ui:VisualElement>
     </ui:VisualElement>
+
+    <!--
+        Phone held sideways (ResponsivePanel.RotateClass on the root): covers the dashboard and catches
+        touches. Outside #dashboard so the safe-area padding does not inset it; last sibling so it draws on top.
+    -->
+    <ui:VisualElement name="rotate-hint" class="rotate-hint">
+        <ui:VisualElement class="rotate-hint__phone" picking-mode="Ignore">
+            <ui:VisualElement class="rotate-hint__notch" picking-mode="Ignore" />
+        </ui:VisualElement>
+        <ui:Label class="rotate-hint__title" text="Turn your phone upright" picking-mode="Ignore" />
+        <ui:Label class="rotate-hint__message" text="On phones the dashboard is laid out for portrait. The simulation keeps running." picking-mode="Ignore" />
+    </ui:VisualElement>
 </ui:UXML>
