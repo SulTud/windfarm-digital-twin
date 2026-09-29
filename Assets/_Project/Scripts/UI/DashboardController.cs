@@ -30,8 +30,8 @@ namespace WindFarm.UI
         [SerializeField, Min(0f), Tooltip("Hub height shown in the top bar (m).")]
         private float hubHeight = 94f;
 
-        // Shared by the trend chart and the power curve scatter. Min 0.5 s of simulation time apart, so a 5 min
-        // window holds ~600 samples at any simulation speed.
+        // Feeds the trend chart (the power curve keeps its own trail of the smoothed live point). Min 0.5 s of
+        // simulation time apart, so a 5 min window holds ~600 samples at any simulation speed.
         private readonly TelemetryHistory history = new TelemetryHistory(1024, 0.5);
 
         private ITurbineTelemetrySource source;
@@ -65,7 +65,7 @@ namespace WindFarm.UI
             valueCards = new ValueCardsPresenter(root, specs);
             alerts = new AlertsPresenter(root, specs);
             trendChart = new TrendChartPresenter(root, specs, history);
-            powerCurve = new PowerCurvePresenter(root, specs, history);
+            powerCurve = new PowerCurvePresenter(root, specs);
             controls = new ControlsPresenter(root, simulator, turbineVisuals);
 
             source = simulator;

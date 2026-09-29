@@ -42,20 +42,21 @@ namespace WindFarm.UI
         /// <summary>Sample by age order: 0 = oldest, Count - 1 = newest.</summary>
         public TelemetrySample this[int index] => buffer[(start + index) % buffer.Length];
 
-        public void Add(in TurbineTelemetry telemetry)
+        public void Add(in TurbineTelemetry telemetry) =>
+            Add(new TelemetrySample(telemetry.SimulationTime, telemetry.PowerOutputMW, telemetry.WindSpeed,
+                telemetry.GeneratorTemperature));
+
+        public void Add(in TelemetrySample sample)
         {
             if (Count > 0)
             {
                 double newestTime = this[Count - 1].Time;
                 // Too close to the previous sample, or time went backwards (source restarted): skip / reset.
-                if (telemetry.SimulationTime < newestTime)
+                if (sample.Time < newestTime)
                     Clear();
-                else if (telemetry.SimulationTime - newestTime < minInterval)
+                else if (sample.Time - newestTime < minInterval)
                     return;
             }
-
-            var sample = new TelemetrySample(telemetry.SimulationTime, telemetry.PowerOutputMW,
-                telemetry.WindSpeed, telemetry.GeneratorTemperature);
 
             if (Count < buffer.Length)
             {

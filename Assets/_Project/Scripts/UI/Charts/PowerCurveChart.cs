@@ -7,29 +7,39 @@ namespace WindFarm.UI
     /// <summary>
     /// Power curve (power vs. wind speed), the signature chart of a wind turbine datasheet:
     ///   - the theoretical curve from the specs, with cut-in / cut-out markers,
-    ///   - recent measured samples as a faint scatter (they spread around the curve because the rotor lags the wind,
-    ///     exactly like real SCADA data),
+    ///   - the trail of the live point as fading dots (it spreads around the curve because the rotor lags the wind,
+    ///     like averaged SCADA data; the presenter records it),
     ///   - the live operating point, emphasized and labeled.
     ///
-    /// Cost: the chart itself (grid, curve, scatter) repaints only when a new sample arrives, the size or the palette
-    /// changes, or it comes back on screen. The live point moves every frame, so it is a separate small element that
-    /// is only translated (a transform change, no tessellation and no relayout), and so is its label.
+    /// Cost, in three layers:
+    ///   - this element (grid, limits, datasheet curve) repaints only when the size or the palette changes, or when
+    ///     it comes back on screen;
+    ///   - the trail is a child <see cref="ScatterLayer"/> written as a raw mesh when a new dot arrives. It used to
+    ///     be one Painter2D path with a sub-path per dot: the fill tessellator then resolved every intersection between
+    ///     overlapping dots, and dots pile up on one spot at steady wind, so the cost grew with time until an iPhone
+    ///     froze (0 fps on returning to the tab). A mesh has no tessellation: cost is linear in the dot count;
+    ///   - the live point moves every frame, so it is a small element that is only translated (a transform change,
+    ///     no tessellation and no relayout), and so is its label.
     /// </summary>
     internal sealed class PowerCurveChart : ChartElement
     {
         private const float CurveStep = 0.25f;          // m/s between curve vertices
         private const float ScatterRadius = 2f;
+        private const float NewestDotAlpha = 0.5f;      // dots fade with age, like color over lifetime on a particle
+        private const float OldestDotAlpha = 0.04f;
+        private const int MaxScatterDots = 1000;        // 300 s at 0.5 s spacing is ~600; the cap only guards the mesh size
         private const float LiveRadius = 4.5f;
         private const float WindTickStep = 5f;
         private const float PowerTickStep = 1f;
 
-        // A 2 px dot as an octagon: looks the same as a circle, far fewer vertices than Arc.
+        // A 2 px dot as an octagon: looks the same as a circle at this size.
         private static readonly Vector2[] OctagonCorners = BuildOctagon(ScatterRadius);
 
         private readonly Label[] xLabels = new Label[8];
         private readonly Label[] yLabels = new Label[5];
         private readonly Label xUnit;
         private readonly Label yUnit;
+        private readonly ScatterLayer scatter;
         private readonly LiveMarker liveMarker;
         private readonly Label liveLabel;
 
@@ -53,6 +63,10 @@ namespace WindFarm.UI
             yUnit = AddLabel("chart__tick chart__unit");
             yUnit.text = "MW";
 
+            // Children draw after (above) the parent's content, in this order: scatter, live point, its label.
+            scatter = new ScatterLayer(this);
+            Add(scatter);
+
             liveMarker = new LiveMarker(this, LiveRadius);
             Add(liveMarker);
 
@@ -64,9 +78,10 @@ namespace WindFarm.UI
         // ---- Data set by the presenter before Refresh() ----
 
         public TurbineSpecs Specs { get; set; }
-        public TelemetryHistory History { get; set; }
+        /// <summary>Past positions of the live point (simulation time, power, wind), oldest first.</summary>
+        public TelemetryHistory Trail { get; set; }
         public double Now { get; set; }
-        public double ScatterSeconds { get; set; } = 120.0;
+        public double TrailSeconds { get; set; } = 300.0;
         public float LiveWind { get; set; }
         public float LivePower { get; set; }
         public bool HasData { get; set; }
@@ -81,7 +96,7 @@ namespace WindFarm.UI
         private float Y(Rect plot, float power) => plot.yMax - Mathf.Clamp01(power / MaxPower) * plot.height;
 
         /// <summary>
-        /// Called every frame. Moves the live point; repaints the chart only when its content changed. Does nothing
+        /// Called every frame. Moves the live point; repaints each layer only when its content changed. Does nothing
         /// while the chart is off screen.
         /// </summary>
         public void Refresh()
@@ -95,20 +110,26 @@ namespace WindFarm.UI
             Rect plot = PlotRect;
             UpdateLivePoint(plot);
 
-            TelemetryHistory history = History;
+            bool layoutChanged = becameShown || StyleChanged || plot != drawnPlot || HasData != drawnHasData;
+            if (layoutChanged)
+            {
+                StyleChanged = false;
+                drawnPlot = plot;
+                drawnHasData = HasData;
+
+                UpdateAxisLabels(plot);
+                liveMarker.MarkDirtyRepaint();   // colors may have changed
+                MarkDirtyRepaint();
+            }
+
+            TelemetryHistory history = Trail;
             double newestTime = history != null && history.Count > 0 ? history[history.Count - 1].Time : double.NaN;
             bool sameSample = newestTime == drawnNewestTime || (double.IsNaN(newestTime) && double.IsNaN(drawnNewestTime));
-            if (!becameShown && !StyleChanged && plot == drawnPlot && HasData == drawnHasData && sameSample)
-                return;
-
-            StyleChanged = false;
-            drawnPlot = plot;
-            drawnNewestTime = newestTime;
-            drawnHasData = HasData;
-
-            UpdateAxisLabels(plot);
-            liveMarker.MarkDirtyRepaint();   // colors may have changed
-            MarkDirtyRepaint();
+            if (layoutChanged || !sameSample)
+            {
+                drawnNewestTime = newestTime;
+                scatter.MarkDirtyRepaint();
+            }
         }
 
         private void UpdateAxisLabels(Rect plot)
@@ -188,12 +209,7 @@ namespace WindFarm.UI
             DrawGrid(painter, plot);
             DrawOperatingLimits(painter, plot);
             DrawCurve(painter, plot);
-
-            if (!HasData)
-                return;
-
-            DrawScatter(painter, plot);
-            // The live point is the LiveMarker child, drawn on top of this.
+            // Scatter and live point are the ScatterLayer and LiveMarker children, drawn on top of this.
         }
 
         private void DrawGrid(Painter2D painter, Rect plot)
@@ -238,27 +254,6 @@ namespace WindFarm.UI
             painter.Stroke();
         }
 
-        private void DrawScatter(Painter2D painter, Rect plot)
-        {
-            TelemetryHistory history = History;
-            if (history == null || history.Count == 0)
-                return;
-
-            // One path with a sub-path per dot and a single fill: far cheaper than a fill call per dot.
-            painter.fillColor = new Color(SeriesColor.r, SeriesColor.g, SeriesColor.b, 0.35f);
-            painter.BeginPath();
-            for (int i = history.LowerBound(Now - ScatterSeconds); i < history.Count; i++)
-            {
-                TelemetrySample sample = history[i];
-                var center = new Vector2(X(plot, sample.WindSpeed), Y(plot, sample.PowerMW));
-                painter.MoveTo(center + OctagonCorners[0]);
-                for (int corner = 1; corner < OctagonCorners.Length; corner++)
-                    painter.LineTo(center + OctagonCorners[corner]);
-                painter.ClosePath();
-            }
-            painter.Fill();
-        }
-
         private static Vector2[] BuildOctagon(float radius)
         {
             var corners = new Vector2[8];
@@ -268,6 +263,74 @@ namespace WindFarm.UI
                 corners[i] = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * radius;
             }
             return corners;
+        }
+
+        /// <summary>
+        /// The trail as translucent dots that fade with age, written straight into a mesh: each dot is a triangle fan
+        /// (center + 8 corners), like filling a Mesh with SetVertices / SetTriangles. No path tessellation, so
+        /// overlapping dots cost nothing extra; overlaps simply look denser, as in a real SCADA scatter plot. No
+        /// anti-aliasing, which is invisible on 2 px dots at 2x resolution.
+        /// </summary>
+        private sealed class ScatterLayer : VisualElement
+        {
+            private const int VerticesPerDot = 9;    // center + 8 corners
+            private const int IndicesPerDot = 24;    // 8 triangles
+
+            private readonly PowerCurveChart chart;
+
+            public ScatterLayer(PowerCurveChart chart)
+            {
+                this.chart = chart;
+                pickingMode = PickingMode.Ignore;
+                style.position = Position.Absolute;
+                style.left = 0f;
+                style.top = 0f;
+                style.right = 0f;
+                style.bottom = 0f;
+                generateVisualContent += Draw;
+            }
+
+            private void Draw(MeshGenerationContext context)
+            {
+                TelemetryHistory history = chart.Trail;
+                Rect plot = chart.PlotRect;   // same box as the chart, so the same coordinates
+                if (!chart.HasData || history == null || history.Count == 0 || plot.width < 4f || plot.height < 4f)
+                    return;
+
+                double window = chart.TrailSeconds;
+                int first = history.LowerBound(chart.Now - window);
+                int count = Mathf.Min(history.Count - first, MaxScatterDots);
+                if (count <= 0)
+                    return;
+                first = history.Count - count;
+
+                Color series = chart.SeriesColor;
+                MeshWriteData mesh = context.Allocate(count * VerticesPerDot, count * IndicesPerDot);
+
+                for (int dot = 0; dot < count; dot++)
+                {
+                    TelemetrySample sample = history[first + dot];
+                    float x = chart.X(plot, sample.WindSpeed);
+                    float y = chart.Y(plot, sample.PowerMW);
+
+                    // Linear fade over the window: the newest dots are brightest, so the trail shows the direction.
+                    float age = Mathf.Clamp01((float)((chart.Now - sample.Time) / window));
+                    Color32 tint = new Color(series.r, series.g, series.b, Mathf.Lerp(NewestDotAlpha, OldestDotAlpha, age));
+
+                    mesh.SetNextVertex(new Vertex { position = new Vector3(x, y, Vertex.nearZ), tint = tint });
+                    foreach (Vector2 corner in OctagonCorners)
+                        mesh.SetNextVertex(new Vertex { position = new Vector3(x + corner.x, y + corner.y, Vertex.nearZ), tint = tint });
+
+                    // Corners go clockwise on screen (y down), as UI Toolkit expects for front faces.
+                    ushort center = (ushort)(dot * VerticesPerDot);
+                    for (int corner = 0; corner < 8; corner++)
+                    {
+                        mesh.SetNextIndex(center);
+                        mesh.SetNextIndex((ushort)(center + 1 + corner));
+                        mesh.SetNextIndex((ushort)(center + 1 + (corner + 1) % 8));
+                    }
+                }
+            }
         }
 
         /// <summary>
