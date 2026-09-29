@@ -61,6 +61,9 @@ namespace WindFarm.Simulation
         public TurbineOperatingState CurrentState => controller.State;
         public TurbineSpecs Specs => specs;
 
+        /// <summary>Current site mean wind (m/s); see <see cref="SetMeanWindSpeed"/>.</summary>
+        public float MeanWindSpeed => windConditions.MeanWindSpeed;
+
         public float SimulationSpeed
         {
             get => simulationSpeed;

@@ -2,6 +2,7 @@ using System.Globalization;
 using UnityEngine;
 using UnityEngine.UIElements;
 using WindFarm.Simulation;
+using WindFarm.Visuals;
 
 namespace WindFarm.UI
 {
@@ -18,6 +19,9 @@ namespace WindFarm.UI
     {
         // Unity cannot serialize interfaces; take the concrete component and use it through the interface.
         [SerializeField] private TurbineDataSimulator simulator;
+
+        [SerializeField, Tooltip("3D turbine driven by the X-Ray buttons. Optional: without it the buttons are disabled.")]
+        private TurbineVisualController turbineVisuals;
 
         [Header("Identity")]
         [SerializeField, Tooltip("Turbine model class shown next to the turbine id.")]
@@ -36,6 +40,7 @@ namespace WindFarm.UI
         private AlertsPresenter alerts;
         private TrendChartPresenter trendChart;
         private PowerCurvePresenter powerCurve;
+        private ControlsPresenter controls;
 
         private void OnEnable()
         {
@@ -61,6 +66,7 @@ namespace WindFarm.UI
             alerts = new AlertsPresenter(root, specs);
             trendChart = new TrendChartPresenter(root, specs, history);
             powerCurve = new PowerCurvePresenter(root, specs, history);
+            controls = new ControlsPresenter(root, simulator, turbineVisuals);
 
             source = simulator;
             source.TelemetryUpdated += HandleTelemetry;
@@ -86,6 +92,8 @@ namespace WindFarm.UI
             trendChart?.Dispose();
             trendChart = null;
             powerCurve = null;
+            controls?.Dispose();
+            controls = null;
         }
 
         private void Update()
@@ -96,6 +104,7 @@ namespace WindFarm.UI
             alerts?.Tick(deltaTime);
             trendChart?.Tick(deltaTime);
             powerCurve?.Tick(deltaTime);
+            controls?.Tick();
         }
 
         private void HandleTelemetry(TurbineTelemetry telemetry)
@@ -112,6 +121,7 @@ namespace WindFarm.UI
         private void Reset()
         {
             simulator = FindAnyObjectByType<TurbineDataSimulator>();
+            turbineVisuals = FindAnyObjectByType<TurbineVisualController>();
         }
 #endif
     }

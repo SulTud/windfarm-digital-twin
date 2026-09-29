@@ -217,6 +217,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::WindFarm.UI.DashboardController
   simulator: {fileID: 1145990849}
+  turbineVisuals: {fileID: 1352469945}
   turbineClass: V112-class
   hubHeight: 94
 --- !u!1 &330585543

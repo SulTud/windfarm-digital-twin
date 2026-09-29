@@ -163,9 +163,10 @@
             <ui:VisualElement name="sim-speed-group" class="dock__group dock__group--speed">
                 <ui:Label class="card__label" text="SIM SPEED" />
                 <ui:VisualElement class="segmented">
-                    <ui:Button name="sim-speed-1" class="segmented__item" text="1×" />
-                    <ui:Button name="sim-speed-5" class="segmented__item segmented__item--on" text="5×" />
-                    <ui:Button name="sim-speed-20" class="segmented__item" text="20×" />
+                    <ui:Button name="sim-speed-1" class="segmented__item segmented__item--on" text="1×" />
+                    <ui:Button name="sim-speed-2" class="segmented__item" text="2×" />
+                    <ui:Button name="sim-speed-5" class="segmented__item" text="5×" />
+                    <ui:Button name="sim-speed-10" class="segmented__item" text="10×" />
                 </ui:VisualElement>
             </ui:VisualElement>
             <ui:VisualElement name="xray-group" class="dock__group dock__group--xray">
