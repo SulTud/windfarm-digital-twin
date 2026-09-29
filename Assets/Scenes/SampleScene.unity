@@ -131,6 +131,7 @@ GameObject:
   - component: {fileID: 116683435}
   - component: {fileID: 116683434}
   - component: {fileID: 116683437}
+  - component: {fileID: 116683438}
   m_Layer: 0
   m_Name: UI_Dashboard
   m_TagString: Untagged
@@ -203,6 +204,21 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5c4fe7f747d9a6f47a93bcaa3bf86958, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::WindFarm.UI.DashboardLayout
+--- !u!114 &116683438
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 116683433}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6b8363295c54bb346a3a96496e31b7de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::WindFarm.UI.DashboardController
+  simulator: {fileID: 1145990849}
+  turbineClass: V112-class
+  hubHeight: 94
 --- !u!1 &330585543
 GameObject:
   m_ObjectHideFlags: 0

@@ -8,12 +8,12 @@
                 <ui:Label name="turbine-id" class="turbine-id" text="WTG-01" />
                 <ui:Label name="turbine-class" class="turbine-class" text="V112-class · 3.0 MW · hub 94 m" />
             </ui:VisualElement>
-            <ui:VisualElement class="top-bar__status" picking-mode="Ignore">
+            <ui:VisualElement name="top-bar-status" class="top-bar__status" picking-mode="Ignore">
                 <ui:VisualElement name="state-pill" class="pill pill--good">
                     <ui:VisualElement class="pill__dot" />
                     <ui:Label name="state-label" class="pill__label" text="PRODUCING" />
                 </ui:VisualElement>
-                <ui:Label name="state-explanation" class="state-explanation" text="Wind above cut-in, below rated. Rotor follows the wind." />
+                <ui:Label name="state-explanation" class="state-explanation" picking-mode="Ignore" text="Wind above cut-in, below rated. Rotor follows the wind." />
             </ui:VisualElement>
             <ui:VisualElement class="top-bar__meta" picking-mode="Ignore">
                 <ui:Label name="sim-clock" class="meta-text" text="SIM 1× · 00:00:00" />

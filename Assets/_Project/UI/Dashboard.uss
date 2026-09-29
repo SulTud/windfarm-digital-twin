@@ -115,6 +115,7 @@
 }
 
 .state-explanation {
+    width: 540px;
     font-size: 13px;
     color: var(--ink-2);
     margin-left: 12px;
@@ -149,12 +150,20 @@
 
 /* ---------- State pill and chip (semantic colors) ---------- */
 
+/*
+ * State changes cross-fade the colors instead of snapping. Fixed widths on the pill and the explanation keep the
+ * centered status group the same size for every state, so the pill does not jump when the text changes.
+ */
 .pill {
     flex-direction: row;
     align-items: center;
+    justify-content: center;
+    min-width: 160px;
     padding: 4px 12px;
     border-width: 1px;
     border-radius: 999px;
+    transition-property: background-color, border-color;
+    transition-duration: 0.4s;
 }
 
 .pill__dot {
@@ -162,11 +171,15 @@
     height: 8px;
     border-radius: 4px;
     margin-right: 7px;
+    transition-property: background-color;
+    transition-duration: 0.4s;
 }
 
 .pill__label {
     font-size: 14px;
     letter-spacing: 1px;
+    transition-property: color;
+    transition-duration: 0.4s;
 }
 
 .chip {
@@ -569,7 +582,30 @@
     margin-top: 2px;
 }
 
-.dashboard--portrait .state-explanation,
+/* The pill is right-aligned on phones, so its width may follow the text. */
+.dashboard--portrait .pill {
+    min-width: 0;
+}
+
+/* Phone type scale: nothing below 11 px (iOS minimum), secondary text at 12 px. */
+.dashboard--portrait .card__label {
+    font-size: 13px;
+}
+
+.dashboard--portrait .card__aside,
+.dashboard--portrait .turbine-class,
+.dashboard--portrait .dashboard .tab {
+    font-size: 12px;
+}
+
+.dashboard--portrait .wind-tick {
+    font-size: 11px;
+}
+
+.dashboard--portrait .dock__value {
+    font-size: 14px;
+}
+
 .dashboard--portrait .top-bar__meta,
 .dashboard--portrait .right-column,
 .dashboard--portrait .energy-card,
@@ -579,6 +615,35 @@
 .dashboard--portrait #sim-speed-group,
 .dashboard--portrait #xray-group {
     display: none;
+}
+
+/*
+ * Explanation bubble under the pill. DashboardLayout moves it to the end of the scene space so it draws above the
+ * X-Ray button (UI Toolkit has no z-index; later siblings draw on top). StatusBarPresenter adds .dashboard--explain
+ * on state changes and on pill tap.
+ */
+.dashboard--portrait .state-explanation {
+    position: absolute;
+    top: 6px;
+    right: 0;
+    width: 240px;
+    margin: 0;
+    padding: 8px 12px;
+    white-space: normal;
+    font-size: 14px;
+    background-color: var(--panel-solid);
+    border-width: 1px;
+    border-color: var(--line-strong);
+    border-radius: 8px;
+    opacity: 0;
+    translate: 0 -4px;
+    transition-property: opacity, translate;
+    transition-duration: 0.3s;
+}
+
+.dashboard--portrait.dashboard--explain .state-explanation {
+    opacity: 1;
+    translate: 0 0;
 }
 
 /* column-reverse puts the free scene space on top and the value cards just above the controls. */
@@ -591,10 +656,11 @@
     width: auto;
 }
 
+/* Bottom right, just above the power card: in thumb reach and clear of the explanation bubble at the top. */
 .dashboard--portrait .scene-actions {
     display: flex;
     position: absolute;
-    top: 16px;
+    bottom: 12px;
     right: 0;
 }
 
@@ -603,7 +669,7 @@
 }
 
 .dashboard--portrait .value--hero {
-    font-size: 38px;
+    font-size: 40px;
 }
 
 .dashboard--portrait .kpi-list {
@@ -619,11 +685,11 @@
 }
 
 .dashboard--portrait .kpi-card .value {
-    font-size: 22px;
+    font-size: 24px;
 }
 
 .dashboard--portrait .kpi-card .unit {
-    font-size: 11px;
+    font-size: 12px;
     margin-left: 3px;
     margin-bottom: 3px;
 }
@@ -634,7 +700,7 @@
 }
 
 .dashboard--portrait .kpi-card .chip {
-    font-size: 10px;
+    font-size: 11px;
     padding: 0 5px;
     margin-top: 3px;
 }
