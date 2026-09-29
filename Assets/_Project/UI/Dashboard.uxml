@@ -39,7 +39,7 @@
                     </ui:VisualElement>
                     <ui:VisualElement class="card__footer">
                         <ui:Label name="homes-label" class="card__aside" text="≈ 3,700 homes" />
-                        <ui:Label class="card__aside" text="rated 3.0 MW" />
+                        <ui:Label name="power-rated" class="card__aside" text="rated 3.0 MW" />
                     </ui:VisualElement>
                 </ui:VisualElement>
 
@@ -58,7 +58,7 @@
                     <ui:VisualElement name="rotor-card" class="card kpi-card">
                         <ui:VisualElement class="card__header">
                             <ui:Label class="card__label" text="ROTOR" />
-                            <ui:Label class="card__aside card__aside--wide" text="range 6.2–14" />
+                            <ui:Label name="rotor-range" class="card__aside card__aside--wide" text="range 6.2–14" />
                         </ui:VisualElement>
                         <ui:VisualElement class="value-row">
                             <ui:Label name="rotor-value" class="value" text="11.0" />

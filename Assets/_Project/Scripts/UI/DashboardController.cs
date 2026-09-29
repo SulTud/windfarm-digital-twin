@@ -28,6 +28,7 @@ namespace WindFarm.UI
 
         private ITurbineTelemetrySource source;
         private StatusBarPresenter statusBar;
+        private ValueCardsPresenter valueCards;
 
         private void OnEnable()
         {
@@ -49,6 +50,7 @@ namespace WindFarm.UI
             string classText = string.Format(CultureInfo.InvariantCulture, "{0} · {1:0.0} MW · hub {2:0} m",
                 turbineClass, specs.RatedPowerMW, hubHeight);
             statusBar = new StatusBarPresenter(root, specs, classText);
+            valueCards = new ValueCardsPresenter(root, specs);
 
             source = simulator;
             source.TelemetryUpdated += HandleTelemetry;
@@ -68,16 +70,20 @@ namespace WindFarm.UI
 
             statusBar?.Dispose();
             statusBar = null;
+            valueCards = null;
         }
 
         private void Update()
         {
-            statusBar?.Tick(Time.unscaledDeltaTime);
+            float deltaTime = Time.unscaledDeltaTime;
+            statusBar?.Tick(deltaTime);
+            valueCards?.Tick(deltaTime);
         }
 
         private void HandleTelemetry(TurbineTelemetry telemetry)
         {
             statusBar.Show(telemetry, simulator.SimulationSpeed);
+            valueCards.Show(telemetry);
         }
 
 #if UNITY_EDITOR

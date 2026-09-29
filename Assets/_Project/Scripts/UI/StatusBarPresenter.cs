@@ -1,4 +1,3 @@
-using System.Globalization;
 using UnityEngine;
 using UnityEngine.UIElements;
 using WindFarm.Simulation;
@@ -19,7 +18,6 @@ namespace WindFarm.UI
         // Loading hitches (first frames, tab switches) must not eat the display time: count frames, not wall time.
         private const float MaxTickDelta = 0.1f;
 
-        private static readonly CultureInfo Invariant = CultureInfo.InvariantCulture;
         private static readonly string[] PillClasses = { "pill--idle", "pill--good", "pill--rated", "pill--warn" };
 
         private readonly VisualElement root;
@@ -146,7 +144,6 @@ namespace WindFarm.UI
             simClock.text = Format("SIM {0:0.#}× · {1:00}:{2:00}:{3:00}", simulationSpeed, hours, minutes, seconds);
         }
 
-        // Invariant culture: the UI is English, and a Turkish/German system locale would print "1,5" instead of "1.5".
-        private static string Format(string format, params object[] args) => string.Format(Invariant, format, args);
+        private static string Format(string format, params object[] args) => UiFormat.Format(format, args);
     }
 }
