@@ -131,9 +131,8 @@
                             <ui:Button name="trend-tab-temp" class="tab" text="TEMP" />
                         </ui:VisualElement>
                     </ui:VisualElement>
-                    <ui:VisualElement name="trend-chart" class="chart chart--trend">
-                        <ui:Label class="chart__placeholder" text="trend chart" />
-                    </ui:VisualElement>
+                    <!-- TrendChartPresenter adds a Painter2D TrendChart here. -->
+                    <ui:VisualElement name="trend-chart" class="chart chart--trend" />
                 </ui:VisualElement>
 
                 <ui:VisualElement name="curve-card" class="card chart-card">

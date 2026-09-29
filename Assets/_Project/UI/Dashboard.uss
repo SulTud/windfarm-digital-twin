@@ -462,6 +462,59 @@
     color: var(--muted);
 }
 
+.chart--live {
+    background-color: rgba(0, 0, 0, 0);
+}
+
+/*
+ * Painter2D chart. Colors are custom properties read in C# (CustomStyleResolvedEvent), so the palette stays here.
+ * Literal values: custom properties are read from this rule, not inherited from :root.
+ */
+.chart-canvas {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    --chart-series: #5CC6E0;
+    --chart-grid: rgba(140, 162, 174, 0.16);
+    --chart-muted: #8CA2AE;
+    --chart-warn: #F0B03C;
+    --chart-crit: #EF5A4B;
+    --chart-surface: #13232D;
+}
+
+.chart__tick {
+    position: absolute;
+    -unity-font-definition: url("Fonts/IBMPlexMono-Regular SDF.asset");
+    font-size: 10px;
+    color: var(--muted);
+    white-space: nowrap;
+}
+
+.chart__tick--y {
+    left: 0;
+    -unity-text-align: middle-right;
+}
+
+.chart__tick--x {
+    translate: -50% 0;
+}
+
+.chart__tooltip {
+    position: absolute;
+    top: 0;
+    padding: 2px 6px;
+    -unity-font-definition: url("Fonts/IBMPlexMono-Regular SDF.asset");
+    font-size: 11px;
+    color: var(--ink);
+    white-space: nowrap;
+    background-color: var(--panel-solid);
+    border-width: 1px;
+    border-color: var(--line-strong);
+    border-radius: 4px;
+}
+
 /* ---------- Tabs, segmented buttons, floating buttons ---------- */
 
 .tabs {

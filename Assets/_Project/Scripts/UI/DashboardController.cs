@@ -30,6 +30,7 @@ namespace WindFarm.UI
         private StatusBarPresenter statusBar;
         private ValueCardsPresenter valueCards;
         private AlertsPresenter alerts;
+        private TrendChartPresenter trendChart;
 
         private void OnEnable()
         {
@@ -53,6 +54,7 @@ namespace WindFarm.UI
             statusBar = new StatusBarPresenter(root, specs, classText);
             valueCards = new ValueCardsPresenter(root, specs);
             alerts = new AlertsPresenter(root, specs);
+            trendChart = new TrendChartPresenter(root, specs);
 
             source = simulator;
             source.TelemetryUpdated += HandleTelemetry;
@@ -75,6 +77,8 @@ namespace WindFarm.UI
             valueCards = null;
             alerts?.Dispose();
             alerts = null;
+            trendChart?.Dispose();
+            trendChart = null;
         }
 
         private void Update()
@@ -83,6 +87,7 @@ namespace WindFarm.UI
             statusBar?.Tick(deltaTime);
             valueCards?.Tick(deltaTime);
             alerts?.Tick(deltaTime);
+            trendChart?.Tick(deltaTime);
         }
 
         private void HandleTelemetry(TurbineTelemetry telemetry)
@@ -90,6 +95,7 @@ namespace WindFarm.UI
             statusBar.Show(telemetry, simulator.SimulationSpeed);
             valueCards.Show(telemetry);
             alerts.Show(telemetry);
+            trendChart.Show(telemetry);
         }
 
 #if UNITY_EDITOR
