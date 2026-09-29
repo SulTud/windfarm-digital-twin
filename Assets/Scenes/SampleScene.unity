@@ -689,6 +689,8 @@ MonoBehaviour:
     <CutOutWindSpeed>k__BackingField: 25
     <RestartWindSpeed>k__BackingField: 20
     <ControlAveragingTime>k__BackingField: 30
+    <StateConfirmTime>k__BackingField: 3
+    <StormRestartDelay>k__BackingField: 10
     <AmbientTemperature>k__BackingField: 15
     <FrictionTemperatureRise>k__BackingField: 8
     <LoadTemperatureRise>k__BackingField: 95
