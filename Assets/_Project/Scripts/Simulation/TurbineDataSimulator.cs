@@ -170,6 +170,8 @@ namespace WindFarm.Simulation
                 ? Mathf.Max(0f, currentPowerMW + sensorRandom.NextGaussian(sensorNoise.PowerStdDevFraction * specs.RatedPowerMW))
                 : 0f;
 
+            float resolution = sensorNoise.PitchResolution;
+            float measuredPitch = resolution > 0f ? Mathf.Round(pitch.Angle / resolution) * resolution : pitch.Angle;
             float measuredTemperature = thermal.Temperature + sensorRandom.NextGaussian(sensorNoise.TemperatureStdDev);
 
             return new TurbineTelemetry(
@@ -177,6 +179,7 @@ namespace WindFarm.Simulation
                 simulationTime,
                 measuredWind,
                 measuredRpm,
+                measuredPitch,
                 measuredTemperature,
                 measuredPower,
                 totalEnergyMWh,

@@ -16,6 +16,11 @@ namespace WindFarm.Simulation
         [field: SerializeField, Min(0f), Tooltip("Encoder noise σ (RPM).")]
         public float RotorRpmStdDev { get; private set; } = 0.04f;
 
+        // A digital absolute encoder: its error is the resolution, not random noise. A parked blade reads a constant
+        // value (Gaussian noise made the 70 deg park reading flicker 69.98 / 70.00).
+        [field: SerializeField, Min(0f), Tooltip("Blade pitch encoder resolution (deg). Readings are rounded to it; 0 = exact.")]
+        public float PitchResolution { get; private set; } = 0.1f;
+
         [field: SerializeField, Min(0f), Tooltip("PT100 temperature sensor noise σ (°C).")]
         public float TemperatureStdDev { get; private set; } = 0.1f;
 

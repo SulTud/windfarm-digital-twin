@@ -17,6 +17,9 @@ namespace WindFarm.Simulation
         /// <summary>Main shaft (rotor) speed (RPM).</summary>
         public readonly float RotorRpm;
 
+        /// <summary>Collective blade pitch angle (deg). 0 = fine pitch (full power), 90 = feathered.</summary>
+        public readonly float BladePitch;
+
         /// <summary>Generator winding temperature (°C).</summary>
         public readonly float GeneratorTemperature;
 
@@ -33,6 +36,7 @@ namespace WindFarm.Simulation
             double simulationTime,
             float windSpeed,
             float rotorRpm,
+            float bladePitch,
             float generatorTemperature,
             float powerOutputMW,
             double totalEnergyMWh,
@@ -42,6 +46,7 @@ namespace WindFarm.Simulation
             SimulationTime = simulationTime;
             WindSpeed = windSpeed;
             RotorRpm = rotorRpm;
+            BladePitch = bladePitch;
             GeneratorTemperature = generatorTemperature;
             PowerOutputMW = powerOutputMW;
             TotalEnergyMWh = totalEnergyMWh;
@@ -50,7 +55,7 @@ namespace WindFarm.Simulation
 
         public override string ToString() =>
             $"[{TurbineId} t={SimulationTime:F1}s] {State} | Wind {WindSpeed:F2} m/s | " +
-            $"Rotor {RotorRpm:F2} rpm | Gen {GeneratorTemperature:F1} °C | " +
+            $"Rotor {RotorRpm:F2} rpm | Pitch {BladePitch:F1}° | Gen {GeneratorTemperature:F1} °C | " +
             $"Power {PowerOutputMW:F3} MW | Energy {TotalEnergyMWh:F4} MWh";
     }
 }

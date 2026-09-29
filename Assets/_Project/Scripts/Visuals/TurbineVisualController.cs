@@ -6,13 +6,14 @@ namespace WindFarm.Visuals
     /// <summary>
     /// Drives the 3D turbine model from telemetry:
     ///   RotorRpm             -> Rotor spin (deg/s = RPM x 6)
-    ///   State (+ wind speed) -> Blade pitch (feather to 90 deg on storm shutdown)
+    ///   BladePitch           -> Blade pitch (the simulated pitch controller: fine pitch, rated-power pitching,
+    ///                           park near feather when idle, full feather on storm shutdown)
     ///   GeneratorTemperature -> Generator / Cooler heat color
     ///   RotorRpm             -> MainShaft spin (same angle as the rotor, no gearbox in between)
     ///   State + RotorRpm     -> Brake caliper glows red while the mechanical brake holds the rotor
     ///
-    /// Telemetry arrives at 5 Hz with sensor noise, so every value is smoothed each frame (exponential smoothing)
-    /// and pitch is additionally rate limited like a real pitch drive.
+    /// Telemetry arrives at 5 Hz with sensor noise, so every value is smoothed each frame (exponential smoothing).
+    /// The pitch rate limit lives in the simulator now, where it also affects the physics.
     ///
     /// Spin and pitch are applied on top of the cached initial local rotations, so the imported 6 deg rotor tilt and
     /// the 120 / 240 deg blade offsets are preserved.
@@ -41,24 +42,9 @@ namespace WindFarm.Visuals
         [SerializeField, Tooltip("Blade objects. Each pitches around its local +Y axis (along the blade).")]
         private Transform[] blades = new Transform[0];
 
-        [SerializeField, Range(0f, 90f), Tooltip("Pitch while idle below cut-in (deg). Real turbines park near feather.")]
-        private float idlePitch = 70f;
-
-        [SerializeField, Range(0f, 90f), Tooltip("Pitch during storm shutdown (deg). 90 = fully feathered, chord parallel to the wind.")]
-        private float featherPitch = 90f;
-
-        [SerializeField, Min(0f), Tooltip("Wind speed at which rated power is reached (m/s). Pitch starts rising above it.")]
-        private float ratedWindSpeed = 11f;
-
-        [SerializeField, Range(0f, 45f), Tooltip("Pitch at cut-out wind speed while at rated power (deg). " +
-                                                 "Visual approximation: the power model caps power but does not simulate pitch.")]
-        private float pitchAtCutOut = 25f;
-
-        [SerializeField, Min(0.1f), Tooltip("Maximum pitch rate (deg/s). Real pitch drives move about 5-10 deg/s.")]
-        private float pitchRate = 8f;
-
-        [SerializeField, Min(0.01f), Tooltip("Smoothing time constant for the wind speed used by the rated-power pitch (s).")]
-        private float windSmoothingTime = 2f;
+        [SerializeField, Min(0.01f), Tooltip("Smoothing time constant for the measured pitch (s). Short: the simulator already " +
+                                             "limits the pitch rate, this only hides the 5 Hz steps.")]
+        private float pitchSmoothingTime = 0.25f;
 
         [SerializeField, Tooltip("Flip if feathering turns the trailing edge (instead of the leading edge) into the wind.")]
         private bool invertPitchDirection;
@@ -163,10 +149,9 @@ namespace WindFarm.Visuals
         private float brakeBlend;
 
         private float smoothedRpm;
-        private float smoothedWindSpeed;
+        private float smoothedPitch;
         private float smoothedTemperature;
         private float spinAngle;
-        private float currentPitch;
 
         private Material housingOpaqueMaterial;
         private Material xRayInstance;
@@ -274,9 +259,8 @@ namespace WindFarm.Visuals
             // First sample: snap instead of animating from zero (like a particle system Prewarm).
             hasTelemetry = true;
             smoothedRpm = telemetry.RotorRpm;
-            smoothedWindSpeed = telemetry.WindSpeed;
+            smoothedPitch = telemetry.BladePitch;
             smoothedTemperature = telemetry.GeneratorTemperature;
-            currentPitch = CalculateTargetPitch(telemetry.State, smoothedWindSpeed);
             brakeBlend = IsBrakeEngaged() ? 1f : 0f;
         }
 
@@ -291,11 +275,11 @@ namespace WindFarm.Visuals
                 return;
 
             smoothedRpm = Smooth(smoothedRpm, latest.RotorRpm, rpmSmoothingTime, deltaTime);
-            smoothedWindSpeed = Smooth(smoothedWindSpeed, latest.WindSpeed, windSmoothingTime, deltaTime);
+            smoothedPitch = Smooth(smoothedPitch, latest.BladePitch, pitchSmoothingTime, deltaTime);
             smoothedTemperature = Smooth(smoothedTemperature, latest.GeneratorTemperature, temperatureSmoothingTime, deltaTime);
 
             UpdateRotor(deltaTime);
-            UpdatePitch(deltaTime);
+            UpdatePitch();
             UpdateHeatColor();
             UpdateBrake(deltaTime);
         }
@@ -331,38 +315,15 @@ namespace WindFarm.Visuals
                 brakeMaterial.SetColor(EmissionColorId, brakeEngagedColor * (brakeGlowIntensity * brakeBlend));
         }
 
-        private void UpdatePitch(float deltaTime)
+        private void UpdatePitch()
         {
-            float targetPitch = CalculateTargetPitch(latest.State, smoothedWindSpeed);
-            currentPitch = Mathf.MoveTowards(currentPitch, targetPitch, pitchRate * deltaTime);
-
-            float signedPitch = invertPitchDirection ? -currentPitch : currentPitch;
+            float signedPitch = invertPitchDirection ? -smoothedPitch : smoothedPitch;
             Quaternion pitchRotation = Quaternion.AngleAxis(signedPitch, Vector3.up);
 
             for (int i = 0; i < blades.Length; i++)
             {
                 if (blades[i] != null)
                     blades[i].localRotation = bladeInitialRotations[i] * pitchRotation;
-            }
-        }
-
-        private float CalculateTargetPitch(TurbineOperatingState state, float windSpeed)
-        {
-            switch (state)
-            {
-                case TurbineOperatingState.Idle:
-                    return idlePitch;
-
-                case TurbineOperatingState.StormShutdown:
-                    return featherPitch;
-
-                case TurbineOperatingState.RatedPower:
-                    // Above rated wind the blades pitch out to shed the excess power and hold rated speed.
-                    float cutOut = simulator != null ? simulator.Specs.CutOutWindSpeed : 25f;
-                    return Mathf.Lerp(0f, pitchAtCutOut, Mathf.InverseLerp(ratedWindSpeed, cutOut, windSpeed));
-
-                default:
-                    return 0f; // Producing: fine pitch, maximum aerodynamic efficiency
             }
         }
 
