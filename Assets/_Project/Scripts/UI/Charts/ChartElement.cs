@@ -61,7 +61,27 @@ namespace WindFarm.UI
             }
         }
 
+        /// <summary>Set when the palette changed; the subclass repaints on its next Refresh.</summary>
+        protected bool StyleChanged { get; set; } = true;
+
         protected abstract void DrawContent(Painter2D painter, Rect plot);
+
+        /// <summary>
+        /// True if the chart is on screen: attached, not inside a display:none page and not hidden (closed bottom
+        /// sheet). Painter2D tessellates on the CPU (single-threaded in WebGL), so hidden charts must not repaint.
+        /// </summary>
+        protected bool IsShown()
+        {
+            if (panel == null || resolvedStyle.visibility != Visibility.Visible)   // visibility is inherited
+                return false;
+
+            for (VisualElement element = this; element != null; element = element.parent)
+            {
+                if (element.resolvedStyle.display == DisplayStyle.None)
+                    return false;
+            }
+            return true;
+        }
 
         protected Label AddLabel(string classes)
         {
@@ -144,6 +164,7 @@ namespace WindFarm.UI
             if (custom.TryGetValue(WarningColorProperty, out Color warning)) WarningColor = warning;
             if (custom.TryGetValue(CriticalColorProperty, out Color critical)) CriticalColor = critical;
             if (custom.TryGetValue(SurfaceColorProperty, out Color surface)) SurfaceColor = surface;
+            StyleChanged = true;
             MarkDirtyRepaint();
         }
     }

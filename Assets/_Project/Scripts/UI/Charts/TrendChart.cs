@@ -23,7 +23,23 @@ namespace WindFarm.UI
         private readonly List<Vector2> points = new List<Vector2>(512);
         private readonly List<float> tickValues = new List<float>(MaxTicks);
 
+        // Below half a pixel of movement a repaint looks identical. At 1x the 5 min window scrolls ~1 px/s, so this
+        // turns ~60 repaints per second into ~2 (Painter2D tessellates on the CPU, single-threaded in WebGL).
+        private const float RepaintThreshold = 0.5f;
+
         private float pointerX = float.NaN;
+
+        // What the last repaint showed; Refresh() compares against it.
+        private bool wasShown;
+        private Rect drawnPlot;
+        private double drawnNow = double.NaN;
+        private float drawnHeadY = float.NaN;
+        private double drawnNewestTime = double.NaN;
+        private float drawnPointerX = float.NaN;
+        private Func<TelemetrySample, float> drawnValueOf;
+        private float drawnMin = float.NaN;
+        private float drawnMax = float.NaN;
+        private bool drawnHasData;
 
         public TrendChart()
         {
@@ -66,13 +82,50 @@ namespace WindFarm.UI
 
         private double WindowStart => Now - WindowSeconds;
 
-        /// <summary>Repositions the labels for the current scale and size, then repaints.</summary>
+        /// <summary>
+        /// Called every frame. Repositions the labels and repaints only if the picture would change visibly and the
+        /// chart is on screen.
+        /// </summary>
         public void Refresh()
         {
+            bool shown = IsShown();
+            bool becameShown = shown && !wasShown;
+            wasShown = shown;
+            if (!shown)
+                return;
+
+            Rect plot = PlotRect;
+            TelemetryHistory history = History;
+            double newestTime = history != null && history.Count > 0 ? history[history.Count - 1].Time : double.NaN;
+            float scrolled = (float)(Math.Abs(Now - drawnNow) / WindowSeconds) * plot.width;
+            float headY = Y(plot, HeadValue);
+
+            bool changed = becameShown || StyleChanged || plot != drawnPlot || HasData != drawnHasData ||
+                           ValueOf != drawnValueOf || Min != drawnMin || Max != drawnMax ||
+                           !SameTime(newestTime, drawnNewestTime) || !SamePointer(pointerX, drawnPointerX) ||
+                           !(scrolled < RepaintThreshold) || !(Mathf.Abs(headY - drawnHeadY) < RepaintThreshold);
+            if (!changed)
+                return;
+
+            StyleChanged = false;
+            drawnPlot = plot;
+            drawnNow = Now;
+            drawnHeadY = headY;
+            drawnNewestTime = newestTime;
+            drawnPointerX = pointerX;
+            drawnValueOf = ValueOf;
+            drawnMin = Min;
+            drawnMax = Max;
+            drawnHasData = HasData;
+
             UpdateTickLabels();
             UpdateTooltip();
             MarkDirtyRepaint();
         }
+
+        private static bool SameTime(double a, double b) => a == b || (double.IsNaN(a) && double.IsNaN(b));
+
+        private static bool SamePointer(float a, float b) => a == b || (float.IsNaN(a) && float.IsNaN(b));
 
         // ---- Scale ----
 

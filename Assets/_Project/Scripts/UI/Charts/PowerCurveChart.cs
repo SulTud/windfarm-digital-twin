@@ -10,6 +10,10 @@ namespace WindFarm.UI
     ///   - recent measured samples as a faint scatter (they spread around the curve because the rotor lags the wind,
     ///     exactly like real SCADA data),
     ///   - the live operating point, emphasized and labeled.
+    ///
+    /// Cost: the chart itself (grid, curve, scatter) repaints only when a new sample arrives, the size or the palette
+    /// changes, or it comes back on screen. The live point moves every frame, so it is a separate small element that
+    /// is only translated (a transform change, no tessellation and no relayout), and so is its label.
     /// </summary>
     internal sealed class PowerCurveChart : ChartElement
     {
@@ -19,14 +23,23 @@ namespace WindFarm.UI
         private const float WindTickStep = 5f;
         private const float PowerTickStep = 1f;
 
+        // A 2 px dot as an octagon: looks the same as a circle, far fewer vertices than Arc.
+        private static readonly Vector2[] OctagonCorners = BuildOctagon(ScatterRadius);
+
         private readonly Label[] xLabels = new Label[8];
         private readonly Label[] yLabels = new Label[5];
         private readonly Label xUnit;
         private readonly Label yUnit;
+        private readonly LiveMarker liveMarker;
         private readonly Label liveLabel;
 
         private float shownLiveWind = float.NaN;
         private float shownLivePower = float.NaN;
+
+        private bool wasShown;
+        private Rect drawnPlot;
+        private double drawnNewestTime = double.NaN;
+        private bool drawnHasData;
 
         public PowerCurveChart()
         {
@@ -39,7 +52,13 @@ namespace WindFarm.UI
             xUnit.text = "m/s";
             yUnit = AddLabel("chart__tick chart__unit");
             yUnit.text = "MW";
+
+            liveMarker = new LiveMarker(this, LiveRadius);
+            Add(liveMarker);
+
             liveLabel = AddLabel("chart__live-label");
+            liveLabel.style.left = 0f;
+            liveLabel.style.top = 0f;
         }
 
         // ---- Data set by the presenter before Refresh() ----
@@ -61,12 +80,34 @@ namespace WindFarm.UI
 
         private float Y(Rect plot, float power) => plot.yMax - Mathf.Clamp01(power / MaxPower) * plot.height;
 
-        /// <summary>Repositions the labels for the current size and live point, then repaints.</summary>
+        /// <summary>
+        /// Called every frame. Moves the live point; repaints the chart only when its content changed. Does nothing
+        /// while the chart is off screen.
+        /// </summary>
         public void Refresh()
         {
+            bool shown = IsShown();
+            bool becameShown = shown && !wasShown;
+            wasShown = shown;
+            if (!shown)
+                return;
+
             Rect plot = PlotRect;
+            UpdateLivePoint(plot);
+
+            TelemetryHistory history = History;
+            double newestTime = history != null && history.Count > 0 ? history[history.Count - 1].Time : double.NaN;
+            bool sameSample = newestTime == drawnNewestTime || (double.IsNaN(newestTime) && double.IsNaN(drawnNewestTime));
+            if (!becameShown && !StyleChanged && plot == drawnPlot && HasData == drawnHasData && sameSample)
+                return;
+
+            StyleChanged = false;
+            drawnPlot = plot;
+            drawnNewestTime = newestTime;
+            drawnHasData = HasData;
+
             UpdateAxisLabels(plot);
-            UpdateLiveLabel(plot);
+            liveMarker.MarkDirtyRepaint();   // colors may have changed
             MarkDirtyRepaint();
         }
 
@@ -105,10 +146,16 @@ namespace WindFarm.UI
             xUnit.style.top = plot.yMax - 16f;
         }
 
-        private void UpdateLiveLabel(Rect plot)
+        /// <summary>Moves the live marker and its label with translate only (no layout pass, no tessellation).</summary>
+        private void UpdateLivePoint(Rect plot)
         {
-            liveLabel.style.display = HasData ? DisplayStyle.Flex : DisplayStyle.None;
-            if (!HasData)
+            DisplayStyle display = HasData ? DisplayStyle.Flex : DisplayStyle.None;
+            if (liveMarker.resolvedStyle.display != display)
+            {
+                liveMarker.style.display = display;
+                liveLabel.style.display = display;
+            }
+            if (!HasData || plot.width < 4f || plot.height < 4f)
                 return;
 
             float wind = Mathf.Round(LiveWind * 10f) / 10f;
@@ -120,15 +167,17 @@ namespace WindFarm.UI
                 liveLabel.text = UiFormat.Format("{0:0.0} m/s · {1:0.00} MW", wind, power);
             }
 
-            // Place the label beside the point, flipping sides near the right and top edges to stay inside the card.
             float x = X(plot, LiveWind);
             float y = Y(plot, LivePower);
+            liveMarker.style.translate = new Translate(x - liveMarker.Extent, y - liveMarker.Extent);
+
+            // Beside the point, flipping sides near the right and top edges to stay inside the card. The width is
+            // from the last layout; a text change is at most one frame off.
             bool flipLeft = x > plot.xMin + plot.width * 0.55f;
             bool below = y < plot.yMin + 24f;
-
-            liveLabel.style.left = flipLeft ? StyleKeyword.Auto : new StyleLength(x + 10f);
-            liveLabel.style.right = flipLeft ? new StyleLength(contentRect.width - x + 10f) : StyleKeyword.Auto;
-            liveLabel.style.top = below ? y + 8f : y - 22f;
+            float labelX = flipLeft ? x - 10f - liveLabel.layout.width : x + 10f;
+            float labelY = below ? y + 8f : y - 22f;
+            liveLabel.style.translate = new Translate(Mathf.Round(labelX), Mathf.Round(labelY));
         }
 
         protected override void DrawContent(Painter2D painter, Rect plot)
@@ -144,10 +193,7 @@ namespace WindFarm.UI
                 return;
 
             DrawScatter(painter, plot);
-            // Halo + dot: the one thing on this chart the eye should find first.
-            FillCircle(painter, new Vector2(X(plot, LiveWind), Y(plot, LivePower)), LiveRadius * 2f,
-                new Color(SeriesColor.r, SeriesColor.g, SeriesColor.b, 0.18f));
-            DrawDot(painter, new Vector2(X(plot, LiveWind), Y(plot, LivePower)), LiveRadius, SeriesColor);
+            // The live point is the LiveMarker child, drawn on top of this.
         }
 
         private void DrawGrid(Painter2D painter, Rect plot)
@@ -205,11 +251,60 @@ namespace WindFarm.UI
             {
                 TelemetrySample sample = history[i];
                 var center = new Vector2(X(plot, sample.WindSpeed), Y(plot, sample.PowerMW));
-                painter.MoveTo(center + new Vector2(ScatterRadius, 0f));
-                painter.Arc(center, ScatterRadius, new Angle(0f), new Angle(360f));
+                painter.MoveTo(center + OctagonCorners[0]);
+                for (int corner = 1; corner < OctagonCorners.Length; corner++)
+                    painter.LineTo(center + OctagonCorners[corner]);
                 painter.ClosePath();
             }
             painter.Fill();
+        }
+
+        private static Vector2[] BuildOctagon(float radius)
+        {
+            var corners = new Vector2[8];
+            for (int i = 0; i < corners.Length; i++)
+            {
+                float angle = (i + 0.5f) * Mathf.PI / 4f;
+                corners[i] = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * radius;
+            }
+            return corners;
+        }
+
+        /// <summary>
+        /// Live operating point (halo + dot with a surface ring), drawn once into a small box and then only moved.
+        /// Uses the chart's palette.
+        /// </summary>
+        private sealed class LiveMarker : VisualElement
+        {
+            private readonly PowerCurveChart chart;
+            private readonly float radius;
+
+            public LiveMarker(PowerCurveChart chart, float radius)
+            {
+                this.chart = chart;
+                this.radius = radius;
+                pickingMode = PickingMode.Ignore;
+                style.position = Position.Absolute;
+                style.left = 0f;
+                style.top = 0f;
+                style.width = Extent * 2f;
+                style.height = Extent * 2f;
+                generateVisualContent += Draw;
+            }
+
+            /// <summary>Half the box size: the halo radius.</summary>
+            public float Extent => radius * 2f;
+
+            private void Draw(MeshGenerationContext context)
+            {
+                Painter2D painter = context.painter2D;
+                var center = new Vector2(Extent, Extent);
+                Color series = chart.SeriesColor;
+
+                // Halo + dot: the one thing on this chart the eye should find first.
+                FillCircle(painter, center, Extent, new Color(series.r, series.g, series.b, 0.18f));
+                chart.DrawDot(painter, center, radius, series);
+            }
         }
     }
 }
