@@ -1,0 +1,36 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: M_SkyGradient
+  m_Shader: {fileID: 4800000, guid: dbfabba2b09b4132b8dee867d693ffde, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs: []
+    m_Ints: []
+    m_Floats:
+    - _Exponent: 0.6
+    - _GlowStrength: 0.5
+    - _GlowWidth: 0.08
+    m_Colors:
+    - _GlowColor: {r: 0.36, g: 0.47, b: 0.52, a: 1}
+    - _HorizonColor: {r: 0.235, g: 0.353, b: 0.42, a: 1}
+    - _TopColor: {r: 0.106, g: 0.204, b: 0.275, a: 1}
+  m_BuildTextureStacks: []
+  m_AllowLocking: 1
