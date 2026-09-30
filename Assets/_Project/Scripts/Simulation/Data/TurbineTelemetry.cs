@@ -31,6 +31,15 @@ namespace WindFarm.Simulation
 
         public readonly TurbineOperatingState State;
 
+        /// <summary>
+        /// Active power limit the controller currently allows (MW). Equals rated power in normal operation; lower while
+        /// the controller derates the turbine (e.g. generator temperature alarm).
+        /// </summary>
+        public readonly float PowerLimitMW;
+
+        /// <summary>Alarms active at the sampling instant, as reported by the turbine controller.</summary>
+        public readonly TurbineAlarms Alarms;
+
         public TurbineTelemetry(
             string turbineId,
             double simulationTime,
@@ -40,7 +49,9 @@ namespace WindFarm.Simulation
             float generatorTemperature,
             float powerOutputMW,
             double totalEnergyMWh,
-            TurbineOperatingState state)
+            TurbineOperatingState state,
+            float powerLimitMW,
+            TurbineAlarms alarms)
         {
             TurbineId = turbineId;
             SimulationTime = simulationTime;
@@ -51,11 +62,13 @@ namespace WindFarm.Simulation
             PowerOutputMW = powerOutputMW;
             TotalEnergyMWh = totalEnergyMWh;
             State = state;
+            PowerLimitMW = powerLimitMW;
+            Alarms = alarms;
         }
 
         public override string ToString() =>
             $"[{TurbineId} t={SimulationTime:F1}s] {State} | Wind {WindSpeed:F2} m/s | " +
             $"Rotor {RotorRpm:F2} rpm | Pitch {BladePitch:F1}° | Gen {GeneratorTemperature:F1} °C | " +
-            $"Power {PowerOutputMW:F3} MW | Energy {TotalEnergyMWh:F4} MWh";
+            $"Power {PowerOutputMW:F3} MW (limit {PowerLimitMW:F2}) | Energy {TotalEnergyMWh:F4} MWh | Alarms {Alarms}";
     }
 }

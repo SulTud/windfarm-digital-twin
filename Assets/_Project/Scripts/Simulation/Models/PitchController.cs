@@ -11,7 +11,11 @@ namespace WindFarm.Simulation
     ///                            and the blades sit at fine pitch (0 deg, maximum Cp); above it they pitch toward
     ///                            feather to shed aerodynamic power and hold the speed.
     ///   Idle                     park pitch (near feather, the rotor idles without load)
-    ///   StormShutdown            full feather (90 deg), the blades act as an aerodynamic brake
+    ///   StormShutdown, FaultStop full feather (90 deg), the blades act as an aerodynamic brake
+    ///
+    /// While the controller derates, the generator torque is capped, the rotor speeds up to rated speed and this PI
+    /// holds it there, as in region 3. The loop gain drops with the aerodynamic torque (half at 50 % power), which
+    /// slows the loop but keeps it stable.
     ///
     /// Gains follow the NREL 5-MW design method (Jonkman et al., 2009): the speed loop is a second-order system with
     /// natural frequency 0.6 rad/s and damping 0.7:
@@ -60,7 +64,8 @@ namespace WindFarm.Simulation
             {
                 integral = 0f;
                 startingUp = true;             // the next connection starts with the start-up pitch
-                Command = state == TurbineOperatingState.StormShutdown ? specs.FeatherPitch : specs.IdlePitch;
+                bool feather = state == TurbineOperatingState.StormShutdown || state == TurbineOperatingState.FaultStop;
+                Command = feather ? specs.FeatherPitch : specs.IdlePitch;
                 Angle = Mathf.MoveTowards(Angle, Command, specs.MaxPitchRate * deltaTime);
                 return;
             }

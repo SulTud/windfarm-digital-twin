@@ -15,6 +15,9 @@ namespace WindFarm.Simulation
     ///   turbine goes idle after the confirmation time instead of waiting for the slow 30 s average. A real generator
     ///   would otherwise motor the rotor. The instant wind is used rather than the power, because the power is still
     ///   low for a few seconds while the rotor runs up after a restart.
+    /// - Protection trips (<see cref="GeneratorProtection"/>) stop the turbine at once (FaultStop) and win over every
+    ///   other state. The trip is latched in the protection function; once it resets, the turbine restarts through
+    ///   the normal debounced path (or into a storm shutdown if the wind is too high by then).
     /// </summary>
     public sealed class TurbineController
     {
@@ -44,8 +47,9 @@ namespace WindFarm.Simulation
             this.specs = specs ?? throw new ArgumentNullException(nameof(specs));
         }
 
+        /// <param name="protectionTrip">A protection function demands a stop (latched by that function).</param>
         /// <returns>True if the state changed during this step.</returns>
-        public bool Step(float deltaTime, float windSpeed, float powerMW)
+        public bool Step(float deltaTime, float windSpeed, float powerMW, bool protectionTrip)
         {
             if (!initialized)
             {
@@ -60,7 +64,9 @@ namespace WindFarm.Simulation
 
             timeInState += deltaTime;
 
-            TurbineOperatingState requested = EvaluateRequestedState(windSpeed, powerMW);
+            TurbineOperatingState requested = protectionTrip
+                ? TurbineOperatingState.FaultStop
+                : EvaluateRequestedState(windSpeed, powerMW);
             if (requested == State)
             {
                 pendingTime = 0f;
@@ -68,7 +74,8 @@ namespace WindFarm.Simulation
             }
 
             // Protective stops happen at once; everything else is debounced (like a coyote-time timer on a state change).
-            if (requested != TurbineOperatingState.StormShutdown)
+            bool protective = requested == TurbineOperatingState.StormShutdown || requested == TurbineOperatingState.FaultStop;
+            if (!protective)
             {
                 if (requested != pendingState)
                 {
@@ -106,6 +113,10 @@ namespace WindFarm.Simulation
 
             switch (State)
             {
+                case TurbineOperatingState.FaultStop:
+                    // The trip has reset (otherwise Step would not ask): restart like from idle.
+                    return windAboveCutIn ? TurbineOperatingState.Producing : TurbineOperatingState.Idle;
+
                 case TurbineOperatingState.Idle:
                     // Both the average and the instant wind: after a lull the average is still high, and reconnecting
                     // into no wind would trip the low-wind disconnect right away.

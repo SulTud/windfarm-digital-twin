@@ -93,8 +93,17 @@ namespace WindFarm.Simulation
                                                   "With the defaults the winding settles at ~118 °C at rated power.")]
         public float LoadTemperatureRise { get; private set; } = 95f;
 
-        [field: SerializeField, Min(0.1f), Tooltip("Generator thermal time constant (s). Real value is 20-40 min; shortened for the demo.")]
+        [field: SerializeField, Min(0.1f), Tooltip("Generator thermal time constant with the cooling fan running (s). Real value is " +
+                                                   "20-40 min; shortened for the demo.")]
         public float ThermalTimeConstant { get; private set; } = 90f;
+
+        // Forced air cooling removes most of the heat; with the fan stopped only natural convection is left. The value
+        // is an estimate (OEMs do not publish it). It divides the conductance to the air, so both the temperature rise
+        // and the time constant grow by 1 / fraction.
+        [field: SerializeField, Range(0.05f, 1f), Tooltip("Share of the heat removal left with the generator cooling fan stopped " +
+                                                          "(natural convection only). 0.2 = five times the temperature rise, " +
+                                                          "five times slower heating and cooling.")]
+        public float NaturalCoolingFraction { get; private set; } = 0.2f;
 
         // Typical setpoints for Class F insulation. Real values are OEM specific and usually not published.
         [field: Header("Generator Protection")]
@@ -106,6 +115,14 @@ namespace WindFarm.Simulation
 
         [field: SerializeField, Tooltip("Winding temperature that trips (stops) the turbine (°C). Class F insulation limit.")]
         public float GeneratorTripTemperature { get; private set; } = 155f;
+
+        [field: SerializeField, Range(0f, 1f), Tooltip("Power limit at the trip temperature, as a fraction of rated power. Between the " +
+                                                       "alarm and the trip temperature the limit falls linearly from rated to this value.")]
+        public float DeratedPowerFraction { get; private set; } = 0.5f;
+
+        [field: SerializeField, Tooltip("After a thermal trip the turbine may restart once the winding has cooled below this (°C) " +
+                                        "and no cooling fault is active.")]
+        public float GeneratorRestartTemperature { get; private set; } = 130f;
 
         [field: Header("Environment")]
         [field: SerializeField, Min(0.5f), Tooltip("Air density ρ (kg/m³).")]

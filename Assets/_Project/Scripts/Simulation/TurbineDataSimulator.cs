@@ -8,8 +8,14 @@ namespace WindFarm.Simulation
     /// Orchestrator that produces mock sensor data for a single wind turbine.
     ///
     /// Causal chain (in this order on every physics step):
-    ///   Wind → Controller (state) → Pitch (PI + rate limit) → Rotor (torque balance J·dω/dt = T_aero - T_gen)
-    ///   → Power (generator torque · ω · η) → Generator temperature (thermal lag)
+    ///   Wind → Protection (alarms, power limit, trip) → Controller (state) → Pitch (PI + rate limit)
+    ///   → Rotor (torque balance J·dω/dt = T_aero - T_gen) → Power (generator torque · ω · η)
+    ///   → Generator temperature (heat balance, cooling fan)
+    /// Protection acts on the temperature of the previous step, like a PLC reading its inputs at the start of a scan.
+    ///
+    /// Fault injection (<see cref="InjectFault"/>) changes the physical plant only (e.g. the cooling fan stops). What
+    /// follows (heating, alarms, derating, trip) comes from the models and the controller, and consumers see it through
+    /// the telemetry exactly as they would see it from a real turbine.
     ///
     /// Physics advances with a fixed timestep, so results are independent of the frame rate (FPS).
     /// Telemetry is published at a separate, lower sampling rate — just like a real SCADA system.
@@ -46,7 +52,9 @@ namespace WindFarm.Simulation
         private PitchController pitch;
         private RotorModel rotor;
         private ThermalModel thermal;
+        private GeneratorProtection protection;
         private Random sensorRandom;
+        private TurbineFaults activeFaults;
 
         private double simulationTime;
         private double totalEnergyMWh;
@@ -83,15 +91,25 @@ namespace WindFarm.Simulation
         public void SetMeanWindSpeed(float metersPerSecond) =>
             windConditions.MeanWindSpeed = Mathf.Max(0f, metersPerSecond);
 
+        /// <summary>Physical faults currently injected (mock only; consumers see their effects as alarms in the telemetry).</summary>
+        public TurbineFaults ActiveFaults => activeFaults;
+
+        /// <summary>Injects a fault into the physical plant from the next physics step on (demo "what-if" scenario).</summary>
+        public void InjectFault(TurbineFaults faults) => activeFaults |= faults;
+
+        /// <summary>Repairs a fault (the technician's visit). The controller then resets its alarms on its own conditions.</summary>
+        public void ClearFault(TurbineFaults faults) => activeFaults &= ~faults;
+
         /// <summary>
-        /// Starts over as on scene load: startup mean wind and simulation speed, fresh models (new random streams
-        /// unless a seed is set), clock and energy counter at zero, then the prewarm. Publishes at once. Consumers see
-        /// the simulation time jump back, which is also how a restarted real source would look.
+        /// Starts over as on scene load: startup mean wind and simulation speed, no faults, fresh models (new random
+        /// streams unless a seed is set), clock and energy counter at zero, then the prewarm. Publishes at once.
+        /// Consumers see the simulation time jump back, which is also how a restarted real source would look.
         /// </summary>
         public void ResetSimulation()
         {
             windConditions.MeanWindSpeed = initialMeanWindSpeed;
             simulationSpeed = initialSimulationSpeed;
+            activeFaults = TurbineFaults.None;
 
             TurbineOperatingState previousState = controller.State;
             Initialize();
@@ -158,6 +176,7 @@ namespace WindFarm.Simulation
             pitch = new PitchController(specs);
             rotor = new RotorModel(specs);
             thermal = new ThermalModel(specs);
+            protection = new GeneratorProtection(specs);
         }
 
         private void Prewarm()
@@ -175,15 +194,18 @@ namespace WindFarm.Simulation
             wind.Step(deltaTime);
             float windSpeed = wind.CurrentSpeed;
 
+            bool coolingFanRunning = (activeFaults & TurbineFaults.CoolingFanFailure) == 0;
+            protection.Step(thermal.Temperature, coolingFanRunning);
+
             TurbineOperatingState previousState = controller.State;
-            if (controller.Step(deltaTime, windSpeed, currentPowerMW) && !prewarming)
+            if (controller.Step(deltaTime, windSpeed, currentPowerMW, protection.Tripped) && !prewarming)
                 OperatingStateChanged?.Invoke(previousState, controller.State);
 
             bool connected = controller.IsGeneratorConnected;
             pitch.Step(deltaTime, rotor.Omega, controller.State, controller.AveragedWindSpeed);
-            rotor.Step(deltaTime, windSpeed, pitch.Angle, connected);
+            rotor.Step(deltaTime, windSpeed, pitch.Angle, connected, protection.PowerLimitMW);
             currentPowerMW = PowerModel.ElectricalPowerMW(specs, rotor.Omega, rotor.GeneratorTorque);
-            thermal.Step(deltaTime, rotor.Rpm, currentPowerMW);
+            thermal.Step(deltaTime, rotor.Rpm, currentPowerMW, coolingFanRunning);
 
             totalEnergyMWh += currentPowerMW * deltaTime / 3600.0;
             simulationTime += deltaTime;
@@ -222,7 +244,9 @@ namespace WindFarm.Simulation
                 measuredTemperature,
                 measuredPower,
                 totalEnergyMWh,
-                controller.State);
+                controller.State,
+                protection.PowerLimitMW,
+                protection.Alarms);
         }
     }
 }

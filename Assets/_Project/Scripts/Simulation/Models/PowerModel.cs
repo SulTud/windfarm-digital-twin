@@ -57,6 +57,20 @@ namespace WindFarm.Simulation
             return k * omega * omega;
         }
 
+        /// <summary>
+        /// Generator torque under an active power limit (derating): the converter caps the torque at P_limit / (η·ω).
+        /// The rotor then speeds up until the pitch controller holds it at rated speed, as in region 3.
+        /// </summary>
+        public static float GeneratorTorque(TurbineSpecs specs, float omega, float powerLimitMW)
+        {
+            float torque = GeneratorTorque(specs, omega);
+            if (powerLimitMW >= specs.RatedPowerMW || omega <= 0f)
+                return torque;
+
+            float limitTorque = Mathf.Max(0f, powerLimitMW) * 1_000_000f / (specs.DrivetrainEfficiency * omega);
+            return Mathf.Min(torque, limitTorque);
+        }
+
         /// <summary>Electrical output (MW) for a rotor speed and the generator torque at it.</summary>
         public static float ElectricalPowerMW(TurbineSpecs specs, float omega, float generatorTorque)
         {

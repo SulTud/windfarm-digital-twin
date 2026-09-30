@@ -16,7 +16,7 @@ namespace WindFarm.Simulation
     ///
     /// Start-up and shutdown are supervisory sequences, as on a real turbine, modelled as first-order lags:
     ///   - connected but below minimum speed: spin-up with the blades pitching in, generator not yet synchronised;
-    ///   - disconnected (Idle, StormShutdown): run-down with the blades feathered (aerodynamic brake), then parked.
+    ///   - disconnected (Idle, StormShutdown, FaultStop): run-down with the blades feathered (aerodynamic brake), then parked.
     /// </summary>
     public sealed class RotorModel
     {
@@ -38,7 +38,8 @@ namespace WindFarm.Simulation
         /// <summary>Generator torque applied in the last step (N·m on the rotor shaft); 0 while not synchronised.</summary>
         public float GeneratorTorque { get; private set; }
 
-        public void Step(float deltaTime, float windSpeed, float pitchDegrees, bool generatorConnected)
+        /// <param name="powerLimitMW">Active power limit from the controller (MW); rated power when not derating.</param>
+        public void Step(float deltaTime, float windSpeed, float pitchDegrees, bool generatorConnected, float powerLimitMW)
         {
             if (!generatorConnected)
             {
@@ -58,7 +59,7 @@ namespace WindFarm.Simulation
             }
 
             float aerodynamicTorque = Aerodynamics.Torque(specs, Omega, windSpeed, pitchDegrees);
-            GeneratorTorque = PowerModel.GeneratorTorque(specs, Omega);
+            GeneratorTorque = PowerModel.GeneratorTorque(specs, Omega, powerLimitMW);
             Omega = Mathf.Max(0f, Omega + (aerodynamicTorque - GeneratorTorque) / specs.RotorInertia * deltaTime);
         }
 

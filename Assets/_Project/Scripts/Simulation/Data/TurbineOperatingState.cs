@@ -15,6 +15,12 @@ namespace WindFarm.Simulation
         RatedPower,
 
         /// <summary>Wind above cut-out speed; blades feathered and rotor braking.</summary>
-        StormShutdown
+        StormShutdown,
+
+        /// <summary>
+        /// Stopped by a protection trip (e.g. generator over-temperature); blades feathered and rotor braking. Restarts
+        /// on its own only once the cause is cleared (see <see cref="TurbineTelemetry.Alarms"/>).
+        /// </summary>
+        FaultStop
     }
 }
