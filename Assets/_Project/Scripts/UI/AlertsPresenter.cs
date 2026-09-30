@@ -14,16 +14,17 @@ namespace WindFarm.UI
 
     /// <summary>
     /// Generator temperature status and the notification banner.
-    ///   - Chip (NORMAL / WARNING / ALARM / TRIP) and card border tint from the protection limits in the specs.
+    ///   - Chip (NORMAL / WARNING / ALARM / TRIP) and card border tint from the alarms the turbine controller reports.
     ///   - Scale: zone widths from the limits, marker follows the smoothed temperature.
-    ///   - Banner: the most important active event in plain language (trip > alarm > storm shutdown > warning).
+    ///   - Banner: the most important active event in plain language
+    ///     (trip > alarm / derating > storm shutdown > temperature warning > cooling fan fault).
     ///
-    /// Levels use hysteresis like the turbine controller: a level is left only 2 °C below its limit, so sensor noise
-    /// at a threshold does not flicker the chip. The derate / trip actions themselves arrive with fault injection.
+    /// The dashboard does not classify the temperature itself: the controller decides (with its hysteresis) and acts
+    /// on it, the dashboard shows what it reports, as a SCADA screen does. That also keeps the chip, the banner and the
+    /// real derate / trip in step.
     /// </summary>
     internal sealed class AlertsPresenter
     {
-        private const float LevelHysteresis = 2f;             // °C
         private const float ScaleHeadroom = 15f;              // °C shown above the trip limit
         private const float MarkerSmoothingTime = 1f;         // s; matches the temperature value and the 3D heat color
         private const string BannerClass = "dashboard--banner";
@@ -60,6 +61,7 @@ namespace WindFarm.UI
 
         private string shownBannerKey;
         private int shownBannerTemperature = int.MinValue;
+        private int shownBannerLimit = int.MinValue;
 
         public AlertsPresenter(VisualElement root, TurbineSpecs specs)
         {
@@ -125,7 +127,7 @@ namespace WindFarm.UI
 
             RefreshScale();
 
-            GeneratorTemperatureLevel newLevel = Classify(telemetry.GeneratorTemperature, level);
+            GeneratorTemperatureLevel newLevel = Classify(telemetry.Alarms);
             if (newLevel != level)
                 ApplyLevel(newLevel);
 
@@ -149,17 +151,13 @@ namespace WindFarm.UI
             }
         }
 
-        private GeneratorTemperatureLevel Classify(float temperature, GeneratorTemperatureLevel current)
+        private static GeneratorTemperatureLevel Classify(TurbineAlarms alarms)
         {
-            // Entering a level needs the limit; leaving it needs the limit minus the hysteresis.
-            float Limit(GeneratorTemperatureLevel candidate, float limit) =>
-                current >= candidate ? limit - LevelHysteresis : limit;
-
-            if (temperature >= Limit(GeneratorTemperatureLevel.Trip, specs.GeneratorTripTemperature))
+            if ((alarms & TurbineAlarms.GeneratorOverTemperatureTrip) != 0)
                 return GeneratorTemperatureLevel.Trip;
-            if (temperature >= Limit(GeneratorTemperatureLevel.Alarm, specs.GeneratorAlarmTemperature))
+            if ((alarms & TurbineAlarms.GeneratorTemperatureAlarm) != 0)
                 return GeneratorTemperatureLevel.Alarm;
-            if (temperature >= Limit(GeneratorTemperatureLevel.Warning, specs.GeneratorWarningTemperature))
+            if ((alarms & TurbineAlarms.GeneratorTemperatureWarning) != 0)
                 return GeneratorTemperatureLevel.Warning;
             return GeneratorTemperatureLevel.Normal;
         }
@@ -207,38 +205,57 @@ namespace WindFarm.UI
             string message;
             bool critical;
             int temperature = Mathf.RoundToInt(telemetry.GeneratorTemperature);
+            int limitTenths = int.MinValue; // power limit in 0.1 MW, only where the message shows it
+            bool fanFault = (telemetry.Alarms & TurbineAlarms.CoolingFanFault) != 0;
 
             if (level == GeneratorTemperatureLevel.Trip)
             {
-                key = "trip";
+                key = fanFault ? "trip-fan" : "trip";
                 critical = true;
-                title = "Thermal trip";
-                message = UiFormat.Format("Generator winding at {0} °C reached the {1:0} °C insulation limit. Protection stops the turbine.",
-                    temperature, specs.GeneratorTripTemperature);
+                title = "Thermal trip · turbine stopped";
+                message = fanFault
+                    ? UiFormat.Format("Winding reached the {0:0} °C insulation limit. Now {1} °C. Stays stopped until the cooling fan is repaired.",
+                        specs.GeneratorTripTemperature, temperature)
+                    : UiFormat.Format("Cooling works again. Winding {0} °C, restarts below {1:0} °C.",
+                        temperature, specs.GeneratorRestartTemperature);
             }
             else if (level == GeneratorTemperatureLevel.Alarm)
             {
-                key = "alarm";
+                key = fanFault ? "alarm-fan" : "alarm";
                 critical = true;
-                title = "Generator overheating";
-                message = UiFormat.Format("{0} °C, above the {1:0} °C alarm limit. Protection derates the output.",
-                    temperature, specs.GeneratorAlarmTemperature);
+                title = "Generator overheating · derated";
+                limitTenths = Mathf.RoundToInt(telemetry.PowerLimitMW * 10f);
+                message = UiFormat.Format("{0} °C, above the {1:0} °C alarm limit. Output limited to {2:0.0} MW. Trips at {3:0} °C.",
+                    temperature, specs.GeneratorAlarmTemperature, limitTenths / 10f, specs.GeneratorTripTemperature);
+                if (fanFault)
+                    message += " Cause: cooling fan failed.";
             }
             else if (telemetry.State == TurbineOperatingState.StormShutdown)
             {
                 key = "storm";
                 critical = false;
                 title = "Storm shutdown";
-                message = OperatingStateText.Explanation(TurbineOperatingState.StormShutdown, specs);
+                message = OperatingStateText.Explanation(DisplayedState.StormShutdown, specs);
                 temperature = int.MinValue; // message does not contain the temperature
             }
             else if (level == GeneratorTemperatureLevel.Warning)
             {
-                key = "warning";
+                key = fanFault ? "warning-fan" : "warning";
                 critical = false;
                 title = "Generator temperature high";
-                message = UiFormat.Format("{0} °C, above the {1:0} °C warning limit. Check the cooling.",
+                message = UiFormat.Format(fanFault
+                        ? "{0} °C, above the {1:0} °C warning limit. Cause: cooling fan failed."
+                        : "{0} °C, above the {1:0} °C warning limit. Cooling down.",
                     temperature, specs.GeneratorWarningTemperature);
+            }
+            else if (fanFault)
+            {
+                // Reported before the temperature has moved: the cause is visible before the symptom.
+                key = "fan";
+                critical = false;
+                title = "Cooling fan fault";
+                message = "Generator fan stopped. The winding heats up under load; at low wind it can keep running.";
+                temperature = int.MinValue;
             }
             else
             {
@@ -247,11 +264,12 @@ namespace WindFarm.UI
                 return;
             }
 
-            if (key == shownBannerKey && temperature == shownBannerTemperature)
+            if (key == shownBannerKey && temperature == shownBannerTemperature && limitTenths == shownBannerLimit)
                 return;
 
             shownBannerKey = key;
             shownBannerTemperature = temperature;
+            shownBannerLimit = limitTenths;
             notificationTitle.text = title;
             notificationMessage.text = message;
             notification.EnableInClassList(NotificationClasses[0], !critical);

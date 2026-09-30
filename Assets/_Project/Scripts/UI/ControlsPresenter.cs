@@ -9,9 +9,10 @@ namespace WindFarm.UI
 {
     /// <summary>
     /// Demo controls: site mean wind slider, simulation speed buttons, the X-Ray toggles (dock button on PC,
-    /// floating button on phones) and the reset button (restarts the simulation, turns X-Ray off, camera home).
+    /// floating button on phones), the fault scenario toggle (cooling fan failure / repair; dock on PC, floating
+    /// button on phones) and the reset button (restarts the simulation, turns X-Ray off, camera home).
     ///
-    /// These drive the mock simulator directly (SetMeanWindSpeed / SimulationSpeed / ResetSimulation), so they take the concrete
+    /// These drive the mock simulator directly (SetMeanWindSpeed / SimulationSpeed / InjectFault / ResetSimulation), so they take the concrete
     /// TurbineDataSimulator. With a real SCADA source there is nothing to control and this presenter would not be
     /// created. Every frame the controls re-sync from the simulator, so Inspector changes in Play mode show up too.
     /// </summary>
@@ -33,10 +34,13 @@ namespace WindFarm.UI
         private readonly Button xRayButton;
         private readonly Button xRayFab;
         private readonly Button resetButton;
+        private readonly Button faultButton;
+        private readonly Button faultFab;
 
         private float shownWind = float.NaN;
         private float shownSpeed = float.NaN;
         private int shownXRay = -1;
+        private int shownFault = -1;
 
         public ControlsPresenter(VisualElement root, TurbineDataSimulator simulator, TurbineVisualController visuals,
             TurbineOrbitCamera orbitCamera)
@@ -71,6 +75,11 @@ namespace WindFarm.UI
             resetButton = root.Require<Button>("reset-button");
             resetButton.clicked += ResetAll;
 
+            faultButton = root.Require<Button>("fault-button");
+            faultFab = root.Require<Button>("fault-fab");
+            faultButton.clicked += ToggleFault;
+            faultFab.clicked += ToggleFault;
+
             Sync();
         }
 
@@ -82,6 +91,8 @@ namespace WindFarm.UI
             xRayButton.clicked -= ToggleXRay;
             xRayFab.clicked -= ToggleXRay;
             resetButton.clicked -= ResetAll;
+            faultButton.clicked -= ToggleFault;
+            faultFab.clicked -= ToggleFault;
         }
 
         /// <summary>Called every frame: reflect the simulator state (it may also change from the Inspector).</summary>
@@ -101,6 +112,15 @@ namespace WindFarm.UI
         {
             if (visuals != null)
                 visuals.XRayEnabled = !visuals.XRayEnabled;
+        }
+
+        /// <summary>Stops the cooling fan, or repairs it (the technician's visit). Everything after follows from physics.</summary>
+        private void ToggleFault()
+        {
+            if ((simulator.ActiveFaults & TurbineFaults.CoolingFanFailure) != 0)
+                simulator.ClearFault(TurbineFaults.CoolingFanFailure);
+            else
+                simulator.InjectFault(TurbineFaults.CoolingFanFailure);
         }
 
         /// <summary>Back to the state a visitor sees on page load. The controls re-sync on the next Tick.</summary>
@@ -137,6 +157,17 @@ namespace WindFarm.UI
                 shownXRay = xRay;
                 xRayButton.EnableInClassList("segmented__item--on", xRay == 1);
                 xRayFab.EnableInClassList("fab--on", xRay == 1);
+            }
+
+            int fault = (simulator.ActiveFaults & TurbineFaults.CoolingFanFailure) != 0 ? 1 : 0;
+            if (fault != shownFault)
+            {
+                shownFault = fault;
+                // While the fault is active the same button repairs it.
+                faultButton.text = fault == 1 ? "REPAIR FAN" : "FAN FAILURE";
+                faultFab.text = fault == 1 ? "REPAIR" : "FAULT";
+                faultButton.EnableInClassList("segmented__item--alert", fault == 1);
+                faultFab.EnableInClassList("fab--alert", fault == 1);
             }
         }
 

@@ -18,7 +18,7 @@ namespace WindFarm.UI
         // Loading hitches (first frames, tab switches) must not eat the display time: count frames, not wall time.
         private const float MaxTickDelta = 0.1f;
 
-        private static readonly string[] PillClasses = { "pill--idle", "pill--good", "pill--rated", "pill--warn" };
+        private static readonly string[] PillClasses = { "pill--idle", "pill--good", "pill--rated", "pill--warn", "pill--crit" };
 
         private readonly VisualElement root;
         private readonly TurbineSpecs specs;
@@ -29,7 +29,7 @@ namespace WindFarm.UI
         private readonly Label simClock;
 
         private bool hasState;
-        private TurbineOperatingState state;
+        private DisplayedState state;
         private float explanationRemaining;
         private long shownClockSecond = -1;
         private float shownSpeed = -1f;
@@ -59,8 +59,9 @@ namespace WindFarm.UI
         {
             turbineId.text = telemetry.TurbineId;
 
-            if (!hasState || telemetry.State != state)
-                ApplyState(telemetry.State);
+            DisplayedState displayed = OperatingStateText.Displayed(telemetry, specs);
+            if (!hasState || displayed != state)
+                ApplyState(displayed);
 
             ShowClock(telemetry.SimulationTime, simulationSpeed);
         }
@@ -76,7 +77,7 @@ namespace WindFarm.UI
                 SetExplanationVisible(false);
         }
 
-        private void ApplyState(TurbineOperatingState newState)
+        private void ApplyState(DisplayedState newState)
         {
             hasState = true;
             state = newState;
@@ -84,9 +85,11 @@ namespace WindFarm.UI
             string pillClass;
             switch (newState)
             {
-                case TurbineOperatingState.Idle: pillClass = "pill--idle"; break;
-                case TurbineOperatingState.RatedPower: pillClass = "pill--rated"; break;
-                case TurbineOperatingState.StormShutdown: pillClass = "pill--warn"; break; // protective stop, not a fault
+                case DisplayedState.Idle: pillClass = "pill--idle"; break;
+                case DisplayedState.RatedPower: pillClass = "pill--rated"; break;
+                case DisplayedState.Derated: pillClass = "pill--warn"; break;
+                case DisplayedState.StormShutdown: pillClass = "pill--warn"; break; // protective stop, not a fault
+                case DisplayedState.FaultStop: pillClass = "pill--crit"; break;
                 default: pillClass = "pill--good"; break;
             }
 

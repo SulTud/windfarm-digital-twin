@@ -8,6 +8,10 @@ namespace WindFarm.UI
     /// Value cards: power (hero, with % of rated, fill bar and homes equivalent), wind (+ 30 s average), rotor speed,
     /// generator temperature and produced energy.
     ///
+    /// Fault consequences: while derated, the power card footer shows the limit instead of the rated power; once a
+    /// fault event has happened, the energy card shows the production it cost (<see cref="LostProductionMeter"/>,
+    /// computed from telemetry only, so it works for a real source too).
+    ///
     /// Telemetry arrives at 5 Hz with sensor noise; every value glides toward the latest sample each frame with
     /// exponential smoothing (the same approach as the 3D turbine), so numbers roll instead of jumping.
     /// </summary>
@@ -31,6 +35,10 @@ namespace WindFarm.UI
         private readonly NumberLabel rotor;
         private readonly NumberLabel temperature;
         private readonly Label energy;
+        private readonly Label powerRated;
+        private readonly VisualElement lostRow;
+        private readonly Label lostValue;
+        private readonly LostProductionMeter lostProduction;
 
         private bool hasTelemetry;
         private TurbineTelemetry latest;
@@ -45,6 +53,9 @@ namespace WindFarm.UI
         private int shownHomes = -1;
         private float shownWindAverage = float.NaN;
         private float shownEnergy = float.NaN;
+        private int shownLimitTenths = -1;
+        private int shownLost = -1;          // kWh
+        private int shownLostState = -1;     // 0 hidden, 1 last event, 2 event active
 
         public ValueCardsPresenter(VisualElement root, TurbineSpecs specs)
         {
@@ -59,8 +70,12 @@ namespace WindFarm.UI
             rotor = new NumberLabel(root.Require<Label>("rotor-value"), "0.0", 1);
             temperature = new NumberLabel(root.Require<Label>("temp-value"), "0.0", 1);
             energy = root.Require<Label>("energy-value");
+            powerRated = root.Require<Label>("power-rated");
+            lostRow = root.Require<VisualElement>("lost-row");
+            lostValue = root.Require<Label>("lost-value");
+            lostProduction = new LostProductionMeter(specs);
 
-            root.Require<Label>("power-rated").text = UiFormat.Format("rated {0:0.0} MW", specs.RatedPowerMW);
+            ShowPowerLimit(specs.RatedPowerMW);
             root.Require<Label>("rotor-range").text =
                 UiFormat.Format("range {0:0.#}–{1:0.#}", specs.MinRotorRpm, specs.RatedRotorRpm);
         }
@@ -68,6 +83,11 @@ namespace WindFarm.UI
         public void Show(in TurbineTelemetry telemetry)
         {
             latest = telemetry;
+            // A stopped turbine has no limit worth showing (the protection's value keeps moving while it cools).
+            bool producing = telemetry.State == TurbineOperatingState.Producing || telemetry.State == TurbineOperatingState.RatedPower;
+            ShowPowerLimit(producing ? telemetry.PowerLimitMW : specs.RatedPowerMW);
+            lostProduction.Add(telemetry);
+            ShowLostProduction();
             if (hasTelemetry)
                 return;
 
@@ -127,6 +147,45 @@ namespace WindFarm.UI
                 shownHomes = homesRounded;
                 homes.text = UiFormat.Format("≈ {0:N0} homes", homesRounded);
             }
+        }
+
+        /// <summary>Footer shows "rated 3.0 MW" normally and "limit 2.1 MW" (warning color) while derated.</summary>
+        private void ShowPowerLimit(float limitMW)
+        {
+            int ratedTenths = Mathf.RoundToInt(specs.RatedPowerMW * 10f);
+            int limitTenths = Mathf.Min(Mathf.RoundToInt(limitMW * 10f), ratedTenths);
+            if (limitMW < specs.RatedPowerMW * 0.999f && limitTenths == ratedTenths)
+                limitTenths = ratedTenths - 1; // derated by less than 0.05 MW still reads as derated
+            if (limitTenths == shownLimitTenths)
+                return;
+
+            shownLimitTenths = limitTenths;
+            bool derated = limitTenths < ratedTenths;
+            powerRated.text = derated
+                ? UiFormat.Format("limit {0:0.0} MW", limitTenths / 10f)
+                : UiFormat.Format("rated {0:0.0} MW", specs.RatedPowerMW);
+            powerRated.EnableInClassList("card__aside--warn", derated);
+        }
+
+        /// <summary>"Lost to fault": hidden until the first event, warning color while the event lasts.</summary>
+        private void ShowLostProduction()
+        {
+            int state = !lostProduction.HasEvent ? 0 : lostProduction.EventActive ? 2 : 1;
+            int kilowattHours = Mathf.RoundToInt((float)(lostProduction.LostEnergyMWh * 1000.0));
+            if (state == shownLostState && kilowattHours == shownLost)
+                return;
+
+            if (state != shownLostState)
+            {
+                shownLostState = state;
+                lostRow.EnableInClassList("lost-row--on", state > 0);
+                lostValue.EnableInClassList("card__aside--warn", state == 2);
+            }
+
+            shownLost = kilowattHours;
+            lostValue.text = kilowattHours < 1000
+                ? UiFormat.Format("{0} kWh", kilowattHours)
+                : UiFormat.Format("{0:0.00} MWh", kilowattHours / 1000f);
         }
 
         private void ShowWindAverage(float average)

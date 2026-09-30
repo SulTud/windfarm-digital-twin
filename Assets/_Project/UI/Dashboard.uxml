@@ -105,6 +105,11 @@
                         <ui:Label name="energy-value" class="value" text="1.84" />
                         <ui:Label class="unit" text="MWh" />
                     </ui:VisualElement>
+                    <!-- Shown once a fault event has cost production (derate, fault stop, restart). -->
+                    <ui:VisualElement name="lost-row" class="card__footer lost-row" picking-mode="Ignore">
+                        <ui:Label class="card__aside" text="lost to faults" />
+                        <ui:Label name="lost-value" class="card__aside" text="0 kWh" />
+                    </ui:VisualElement>
                 </ui:VisualElement>
             </ui:VisualElement>
 
@@ -121,6 +126,7 @@
                     </ui:VisualElement>
                 </ui:VisualElement>
                 <ui:VisualElement name="scene-actions" class="scene-actions" picking-mode="Ignore">
+                    <ui:Button name="fault-fab" class="fab fab--fault" text="FAULT" />
                     <ui:Button name="xray-fab" class="fab" text="X-RAY" />
                 </ui:VisualElement>
             </ui:VisualElement>
@@ -177,6 +183,11 @@
             <ui:VisualElement name="xray-group" class="dock__group dock__group--xray">
                 <ui:Label class="card__label" text="HOUSING" />
                 <ui:Button name="xray-button" class="segmented__item segmented__item--single" text="X-RAY" />
+            </ui:VisualElement>
+            <!-- Fault scenario: cooling fan failure on / repaired. On phones the FAULT button in the scene does this. -->
+            <ui:VisualElement name="fault-group" class="dock__group dock__group--fault">
+                <ui:Label class="card__label" text="SCENARIO" />
+                <ui:Button name="fault-button" class="segmented__item segmented__item--single" text="FAN FAILURE" />
             </ui:VisualElement>
             <!-- Full restart: simulation, startup wind and speed, X-Ray off, camera home. Also on phones. -->
             <ui:VisualElement name="reset-group" class="dock__group dock__group--reset">

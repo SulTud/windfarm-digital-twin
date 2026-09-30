@@ -290,10 +290,24 @@
     color: var(--accent);
 }
 
+/* Derated power limit, lost production while a fault event lasts. */
+.card__aside--warn {
+    color: var(--warn);
+}
+
 .card__footer {
     flex-direction: row;
     justify-content: space-between;
     margin-top: 6px;
+}
+
+/* ValueCardsPresenter shows it once a fault event has cost production. */
+.lost-row {
+    display: none;
+}
+
+.lost-row--on {
+    display: flex;
 }
 
 .value-row {
@@ -606,6 +620,21 @@
     border-color: rgba(92, 198, 224, 0.5);
 }
 
+/* Fault toggle while the fault is active: the same button now repairs it. */
+.dashboard .segmented__item--alert,
+.dashboard .segmented__item--alert:hover,
+.dashboard .fab--alert,
+.dashboard .fab--alert:hover {
+    background-color: var(--warn-dim);
+    border-color: var(--warn-line);
+    color: var(--warn);
+}
+
+.dashboard .fab--fault {
+    width: 60px;
+    margin-bottom: 8px;
+}
+
 .segmented {
     flex-direction: row;
     margin-top: 6px;
@@ -626,7 +655,7 @@
 
 .dock {
     align-self: center;
-    width: 700px;
+    width: 820px;
     max-width: 100%;
     flex-direction: row;
     align-items: flex-start;
@@ -643,7 +672,8 @@
 }
 
 .dock__group--speed,
-.dock__group--xray {
+.dock__group--xray,
+.dock__group--fault {
     margin-right: 20px;
 }
 
@@ -879,7 +909,8 @@
 .dashboard--portrait .card__aside--wide,
 .dashboard--portrait .card__footer--wide,
 .dashboard--portrait .temp-scale,
-.dashboard--portrait #xray-group {
+.dashboard--portrait #xray-group,
+.dashboard--portrait #fault-group {
     display: none;
 }
 
