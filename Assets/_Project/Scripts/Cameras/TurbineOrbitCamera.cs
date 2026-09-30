@@ -9,7 +9,7 @@ namespace WindFarm.Cameras
     ///            rectangle the dashboard reports (<see cref="SetViewport"/>), with a shifted projection (see CameraFraming).
     ///   Orbit:   yaw is free, elevation is limited, and the camera never goes below the ground or into the rotor.
     ///   Zoom:    a multiple of the framing distance, so a layout change (phone rotation) keeps the same view.
-    ///            Zooming in moves the pivot from the turbine's middle to the hub, where the X-Ray view is.
+    ///            Zooming in keeps the rotor top in view and moves the pivot up to the drivetrain (X-Ray view).
     ///   Idle:    after a while without input the camera sways slowly to both sides of the rotor front (attract
     ///            mode, centered on the front, not on the slightly diagonal home view) and returns to the home zoom
     ///            and height.
@@ -52,8 +52,8 @@ namespace WindFarm.Cameras
         private float homeYawOffset = 20f;
 
         [SerializeField, Range(0.5f, 1.3f), Tooltip("Home view distance as a multiple of the framing distance (1 = the " +
-            "whole turbine just fits). Below 1 the view also rises toward the hub.")]
-        private float homeZoom = 1f;
+            "whole turbine just fits). Below 1 the rotor stays in view and the tower base is cut first.")]
+        private float homeZoom = 0.8f;
 
         [SerializeField, Range(-30f, 80f), Tooltip("Home view: camera angle above the pivot (deg). Negative looks up at the turbine.")]
         private float homeElevation = -4f;
@@ -332,8 +332,10 @@ namespace WindFarm.Cameras
             Vector3 center = turbine.position + Vector3.up * envelopeHalfHeight;
             Vector3 closeFocus = rotor.position - rotor.forward * xRayFocusOffset;
 
-            // Zooming in shifts the focus from the whole turbine to the drivetrain in the nacelle.
-            float focus = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(1f, 0.5f, zoom));
+            // Zooming in keeps the top of the rotor in view and lets the tower base leave the picture first; the pivot
+            // rises until it settles on the drivetrain in the nacelle (at ~0.76x). At 1x it is the turbine's middle.
+            float top = turbine.position.y + 2f * envelopeHalfHeight;
+            float focus = Mathf.InverseLerp(center.y, closeFocus.y, top - zoom * envelopeHalfHeight);
             Vector3 pivot = Vector3.Lerp(center, closeFocus, focus);
 
             Quaternion rotation = Quaternion.Euler(elevation, yaw, 0f);
