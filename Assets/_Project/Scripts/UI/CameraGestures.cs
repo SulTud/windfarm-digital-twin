@@ -6,7 +6,9 @@ namespace WindFarm.UI
 {
     /// <summary>
     /// Turns pointer input on the scene into camera commands: one finger or mouse drag orbits, pinch or the mouse
-    /// wheel zooms, a double tap / double click returns to the home view.
+    /// wheel zooms, a double tap / double click returns to the home view. Tap, then press again and drag (the Google
+    /// Maps one-finger zoom) zooms too: down = closer. It works with one hand and in the Device Simulator, which
+    /// cannot simulate a pinch or pass the mouse wheel.
     ///
     /// Listens on the full-screen "scene-input" element that lies under the whole dashboard. UI Toolkit hands a press
     /// to the topmost pickable element, so a drag that starts on a card, the slider or the bottom sheet goes to that
@@ -20,6 +22,7 @@ namespace WindFarm.UI
         private const float WheelZoomStep = 1.15f;        // distance factor per wheel notch
         private const long DoubleTapTime = 300;           // ms between the two taps
         private const float DoubleTapDistance = 30f;      // logical px between the two taps
+        private const float DragZoomPerPixel = 0.006f;    // tap-and-drag zoom: 100 px down -> distance x0.55
 
         private readonly VisualElement surface;
         private readonly TurbineOrbitCamera orbitCamera;
@@ -31,6 +34,8 @@ namespace WindFarm.UI
         private Vector2 pressPosition;
         private float pinchDistance;
         private bool dragging;                            // this press orbited or pinched: it is not a tap
+        private bool secondTap;                           // this press came right after a tap: double tap or drag zoom
+        private bool dragZoom;                            // this press is a tap-and-drag zoom
 
         private long lastTapTime = long.MinValue / 2;
         private Vector2 lastTapPosition;
@@ -70,6 +75,9 @@ namespace WindFarm.UI
                 primaryPosition = position;
                 pressPosition = position;
                 dragging = false;
+                dragZoom = false;
+                secondTap = evt.timestamp - lastTapTime <= DoubleTapTime &&
+                    Vector2.Distance(position, lastTapPosition) <= DoubleTapDistance;
             }
             else if (secondaryId == PointerId.invalidPointerId && evt.pointerId != primaryId)
             {
@@ -107,9 +115,13 @@ namespace WindFarm.UI
                     if (Vector2.Distance(position, pressPosition) < DragStartDistance)
                         return;
                     dragging = true;
+                    dragZoom = secondTap;
                 }
 
-                orbitCamera.Orbit(delta);
+                if (dragZoom)
+                    orbitCamera.Zoom(Mathf.Exp(-delta.y * DragZoomPerPixel));   // finger down -> closer
+                else
+                    orbitCamera.Orbit(delta);
             }
             else if (evt.pointerId == secondaryId)
             {
@@ -130,6 +142,8 @@ namespace WindFarm.UI
         {
             if (evt.pointerId == primaryId && !dragging)
                 HandleTap(evt.position, evt.timestamp);
+            else if (evt.pointerId == primaryId)
+                lastTapTime = long.MinValue / 2;   // a drag ends any tap sequence
 
             EndPointer(evt.pointerId);
         }
@@ -167,7 +181,7 @@ namespace WindFarm.UI
 
         private void HandleTap(Vector2 position, long timestamp)
         {
-            if (timestamp - lastTapTime <= DoubleTapTime && Vector2.Distance(position, lastTapPosition) <= DoubleTapDistance)
+            if (secondTap)
             {
                 orbitCamera.ResetView();
                 lastTapTime = long.MinValue / 2;   // a third tap starts a new pair
