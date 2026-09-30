@@ -1,5 +1,10 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
     <Style src="Dashboard.uss" />
+    <!--
+        Full-screen gesture surface for the 3D camera (CameraGestures). First child, so every panel, card and control
+        lies on top of it and takes its own presses; only presses on the empty scene reach it.
+    -->
+    <ui:VisualElement name="scene-input" class="scene-input" />
     <ui:VisualElement name="dashboard" class="dashboard" picking-mode="Ignore">
 
         <!-- 1 + 7: identity, operating state with a plain-language explanation, sim clock and data source -->

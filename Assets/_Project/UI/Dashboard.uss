@@ -77,6 +77,15 @@
     -unity-font-definition: url("Fonts/IBMPlexMono-Regular SDF.asset");
 }
 
+/* Invisible, under the whole dashboard: presses on the empty scene orbit and zoom the camera. */
+.scene-input {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+}
+
 /* ---------- Top bar ---------- */
 
 .top-bar {

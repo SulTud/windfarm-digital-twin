@@ -1,6 +1,7 @@
 using System.Globalization;
 using UnityEngine;
 using UnityEngine.UIElements;
+using WindFarm.Cameras;
 using WindFarm.Simulation;
 using WindFarm.Visuals;
 
@@ -23,6 +24,9 @@ namespace WindFarm.UI
         [SerializeField, Tooltip("3D turbine driven by the X-Ray buttons. Optional: without it the buttons are disabled.")]
         private TurbineVisualController turbineVisuals;
 
+        [SerializeField, Tooltip("Orbit camera framed into the free scene area and driven by scene gestures. Optional.")]
+        private TurbineOrbitCamera orbitCamera;
+
         [Header("Identity")]
         [SerializeField, Tooltip("Turbine model class shown next to the turbine id.")]
         private string turbineClass = "V112-class";
@@ -41,6 +45,7 @@ namespace WindFarm.UI
         private TrendChartPresenter trendChart;
         private PowerCurvePresenter powerCurve;
         private ControlsPresenter controls;
+        private SceneViewPresenter sceneView;
 
         private void OnEnable()
         {
@@ -67,6 +72,8 @@ namespace WindFarm.UI
             trendChart = new TrendChartPresenter(root, specs, history);
             powerCurve = new PowerCurvePresenter(root, specs);
             controls = new ControlsPresenter(root, simulator, turbineVisuals);
+            if (orbitCamera != null)
+                sceneView = new SceneViewPresenter(root, orbitCamera);
 
             source = simulator;
             source.TelemetryUpdated += HandleTelemetry;
@@ -94,6 +101,8 @@ namespace WindFarm.UI
             powerCurve = null;
             controls?.Dispose();
             controls = null;
+            sceneView?.Dispose();
+            sceneView = null;
         }
 
         private void Update()
@@ -105,6 +114,7 @@ namespace WindFarm.UI
             trendChart?.Tick(deltaTime);
             powerCurve?.Tick(deltaTime);
             controls?.Tick();
+            sceneView?.Tick();
         }
 
         private void HandleTelemetry(TurbineTelemetry telemetry)
@@ -122,6 +132,7 @@ namespace WindFarm.UI
         {
             simulator = FindAnyObjectByType<TurbineDataSimulator>();
             turbineVisuals = FindAnyObjectByType<TurbineVisualController>();
+            orbitCamera = FindAnyObjectByType<TurbineOrbitCamera>();
         }
 #endif
     }
