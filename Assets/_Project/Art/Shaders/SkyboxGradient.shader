@@ -1,14 +1,15 @@
 // Gradient sky for the dashboard palette: zenith color fading into a horizon color, with a soft glow band just
-// above the horizon. Below the horizon it stays at the horizon color, which is also the fog color, so the fogged
-// ground plane melts into the sky without a visible edge. No textures (nothing to download in WebGL).
-// SceneEnvironment sets the colors; edit them there, not on the material.
+// above the horizon. Below the horizon it keeps the exact color it has at the horizon, which SceneEnvironment also
+// uses as the fog color, so the fogged ground melts into the sky. Both curves start with zero slope at the horizon:
+// a curve that rises steeply there (pow(y, 0.6), exp(-y)) reads as a hard line even when the colors match.
+// No textures (nothing to download in WebGL). SceneEnvironment sets the values; edit them there, not on the material.
 Shader "WindFarm/Skybox Gradient"
 {
     Properties
     {
         _TopColor ("Zenith Color", Color) = (0.106, 0.204, 0.275, 1)
         _HorizonColor ("Horizon Color", Color) = (0.235, 0.353, 0.420, 1)
-        _Exponent ("Gradient Exponent", Range(0.1, 4)) = 0.6
+        _GradientHeight ("Gradient Height", Range(0.05, 1)) = 0.35
         _GlowColor ("Horizon Glow Color", Color) = (0.36, 0.47, 0.52, 1)
         _GlowWidth ("Horizon Glow Width", Range(0.005, 0.5)) = 0.08
         _GlowStrength ("Horizon Glow Strength", Range(0, 1)) = 0.5
@@ -29,7 +30,7 @@ Shader "WindFarm/Skybox Gradient"
 
             half4 _TopColor;
             half4 _HorizonColor;
-            half _Exponent;
+            half _GradientHeight;
             half4 _GlowColor;
             half _GlowWidth;
             half _GlowStrength;
@@ -61,14 +62,16 @@ Shader "WindFarm/Skybox Gradient"
 
             half4 frag(v2f i) : SV_Target
             {
-                float height = normalize(i.direction).y;
+                // Below the horizon the sky keeps its horizon value (height clamped to 0).
+                float height = max(normalize(i.direction).y, 0.0);
 
-                // Sky: horizon -> zenith. Below the horizon: horizon (= fog) color.
-                half3 color = lerp(_HorizonColor.rgb, _TopColor.rgb, pow(saturate(height), _Exponent));
+                // Sky: horizon -> zenith, 1 - e^-(y/h)^2 (flat at the horizon, ~98 % at twice the height).
+                float toZenith = height / _GradientHeight;
+                half3 color = lerp(_HorizonColor.rgb, _TopColor.rgb, 1.0 - exp(-toZenith * toZenith));
 
-                // Soft glow band just above the horizon (the bright haze of a dusk sky).
-                half glow = exp(-max(height, 0.0) / _GlowWidth) * step(0.0, height) * _GlowStrength;
-                color = lerp(color, _GlowColor.rgb, glow);
+                // Soft glow band on the horizon (the bright haze of a dusk sky), Gaussian: flat at the horizon too.
+                float fromHorizon = height / _GlowWidth;
+                color = lerp(color, _GlowColor.rgb, exp(-fromHorizon * fromHorizon) * _GlowStrength);
 
                 // Dark gradients band visibly in 8 bits: add +-0.5 LSB of screen-space noise (dithering). The step is
                 // one sRGB level, so in a linear project the noise is added in gamma space.

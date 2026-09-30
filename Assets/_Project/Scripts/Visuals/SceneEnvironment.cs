@@ -9,8 +9,8 @@ namespace WindFarm.Visuals
     /// One place for the look of the scene around the turbine, in the dashboard palette (dark dusk blue):
     ///   Sky:     gradient skybox material (zenith -> horizon + a soft glow band), no textures.
     ///   Ground:  matte plane color; it receives the turbine's shadow, which grounds the turbine.
-    ///   Fog:     linear, in the horizon color, starting beyond the turbine and ending before the ground's edge,
-    ///            so the ground melts into the sky. Follows the orbit camera distance: the turbine is never fogged.
+    ///   Fog:     linear, in the sky's exact color at the horizon (horizon + glow), starting beyond the turbine and
+    ///            ending before the ground's edge, so the ground melts into the sky. Follows the orbit camera distance: the turbine is never fogged.
     ///   Sun:     low directional light from the front side (shape and a long shadow on the white turbine).
     ///   Ambient: three colors (sky / horizon / ground) from the same palette.
     ///   Shadows: the pipeline's shadow distance follows the camera (the default 50 m drew no shadow at all at
@@ -26,7 +26,7 @@ namespace WindFarm.Visuals
     {
         private static readonly int TopColorId = Shader.PropertyToID("_TopColor");
         private static readonly int HorizonColorId = Shader.PropertyToID("_HorizonColor");
-        private static readonly int ExponentId = Shader.PropertyToID("_Exponent");
+        private static readonly int GradientHeightId = Shader.PropertyToID("_GradientHeight");
         private static readonly int GlowColorId = Shader.PropertyToID("_GlowColor");
         private static readonly int GlowWidthId = Shader.PropertyToID("_GlowWidth");
         private static readonly int GlowStrengthId = Shader.PropertyToID("_GlowStrength");
@@ -49,10 +49,10 @@ namespace WindFarm.Visuals
 
         [Header("Sky")]
         [SerializeField] private Color zenithColor = new Color(0.106f, 0.204f, 0.275f);    // #1B3446
-        [SerializeField, Tooltip("Also the fog color, so the fogged ground meets the sky without an edge.")]
-        private Color horizonColor = new Color(0.235f, 0.353f, 0.420f);                    // #3C5A6B
-        [SerializeField, Range(0.1f, 4f), Tooltip("Below 1 the zenith color comes in quickly above the horizon.")]
-        private float gradientExponent = 0.6f;
+        [SerializeField] private Color horizonColor = new Color(0.235f, 0.353f, 0.420f);  // #3C5A6B
+        [SerializeField, Range(0.05f, 1f), Tooltip("How high above the horizon the zenith color takes over (sine of " +
+            "the angle; 0.35 ~ 20 deg reaches 63 %).")]
+        private float gradientHeight = 0.35f;
         [SerializeField] private Color horizonGlowColor = new Color(0.361f, 0.471f, 0.522f); // #5C7885
         [SerializeField, Range(0.005f, 0.5f)] private float horizonGlowWidth = 0.08f;
         [SerializeField, Range(0f, 1f)] private float horizonGlowStrength = 0.5f;
@@ -146,7 +146,7 @@ namespace WindFarm.Visuals
             {
                 skyMaterial.SetColor(TopColorId, zenithColor);
                 skyMaterial.SetColor(HorizonColorId, horizonColor);
-                skyMaterial.SetFloat(ExponentId, gradientExponent);
+                skyMaterial.SetFloat(GradientHeightId, gradientHeight);
                 skyMaterial.SetColor(GlowColorId, horizonGlowColor);
                 skyMaterial.SetFloat(GlowWidthId, horizonGlowWidth);
                 skyMaterial.SetFloat(GlowStrengthId, horizonGlowStrength);
@@ -155,7 +155,7 @@ namespace WindFarm.Visuals
 
             RenderSettings.fog = true;
             RenderSettings.fogMode = FogMode.Linear;
-            RenderSettings.fogColor = horizonColor;
+            RenderSettings.fogColor = SkyColorAtHorizon();
             ApplyFogDistance(CameraDistance());
 
             RenderSettings.ambientMode = AmbientMode.Trilight;
@@ -181,6 +181,13 @@ namespace WindFarm.Visuals
                 RenderSettings.sun = sun;
             }
         }
+
+        /// <summary>
+        /// The sky's exact color at the horizon (horizon color with the full glow), used as the fog color: the fully
+        /// fogged far ground then meets the sky with no step. Blended in linear space like the shader does.
+        /// </summary>
+        private Color SkyColorAtHorizon() =>
+            Color.Lerp(horizonColor.linear, horizonGlowColor.linear, horizonGlowStrength).gamma;
 
         private void ApplyFogDistance(float cameraDistance)
         {

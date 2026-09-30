@@ -25,11 +25,11 @@ Material:
     m_TexEnvs: []
     m_Ints: []
     m_Floats:
-    - _Exponent: 0.6
+    - _GradientHeight: 0.35
     - _GlowStrength: 0.5
     - _GlowWidth: 0.08
     m_Colors:
-    - _GlowColor: {r: 0.36, g: 0.47, b: 0.52, a: 1}
+    - _GlowColor: {r: 0.361, g: 0.471, b: 0.522, a: 1}
     - _HorizonColor: {r: 0.235, g: 0.353, b: 0.42, a: 1}
     - _TopColor: {r: 0.106, g: 0.204, b: 0.275, a: 1}
   m_BuildTextureStacks: []
