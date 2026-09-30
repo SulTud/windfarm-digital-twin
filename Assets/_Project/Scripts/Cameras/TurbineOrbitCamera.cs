@@ -5,13 +5,14 @@ namespace WindFarm.Cameras
     /// <summary>
     /// Orbit camera around one turbine, framed into the free screen area between the dashboard panels.
     ///
-    ///   Framing: the whole turbine (tower base to the top blade tip, rotor width) fits into the viewport rectangle
-    ///            the dashboard reports (<see cref="SetViewport"/>), with a shifted projection (see CameraFraming).
+    ///   Framing: the whole turbine (tower base to the top blade tip, rotor diameter wide) fits into the viewport
+    ///            rectangle the dashboard reports (<see cref="SetViewport"/>), with a shifted projection (see CameraFraming).
     ///   Orbit:   yaw is free, elevation is limited, and the camera never goes below the ground or into the rotor.
     ///   Zoom:    a multiple of the framing distance, so a layout change (phone rotation) keeps the same view.
     ///            Zooming in moves the pivot from the turbine's middle to the hub, where the X-Ray view is.
-    ///   Idle:    after a while without input the camera sways slowly from one side of the rotor front to the other
-    ///            (attract mode) and returns to the home zoom and height.
+    ///   Idle:    after a while without input the camera sways slowly to both sides of the rotor front (attract
+    ///            mode, centered on the front, not on the slightly diagonal home view) and returns to the home zoom
+    ///            and height.
     ///
     /// The front of the turbine is the rotor's forward axis, not a world direction, so the home view and the sway
     /// follow the nacelle once yaw is simulated. Manual orbit stays in world space: the nacelle visibly turns.
@@ -22,7 +23,6 @@ namespace WindFarm.Cameras
     [RequireComponent(typeof(Camera))]
     public sealed class TurbineOrbitCamera : MonoBehaviour
     {
-        private const int EnvelopeSegments = 8;
         private const float FallbackRotorRadius = 50f;
         private const float FitSmoothingTime = 0.25f;     // s; layout changes re-frame smoothly
         private const float NearClipFraction = 0.02f;     // near plane at 2 % of the distance: depth precision far away
@@ -40,14 +40,19 @@ namespace WindFarm.Cameras
         private float fieldOfView = 40f;
 
         [SerializeField, Range(0f, 0.4f), Tooltip("Free border around the turbine, as a fraction of the free screen area's half size.")]
-        private float framingMargin = 0.1f;
+        private float framingMargin = 0.08f;
 
         [SerializeField, Min(0f), Tooltip("Far clip plane distance beyond the pivot (m). Room for the sky, ground and distant turbines.")]
         private float farClipMargin = 1500f;
 
         [Header("Orbit")]
-        [SerializeField, Range(-180f, 180f), Tooltip("Home view: angle around the turbine from straight in front of the rotor (deg).")]
-        private float homeYawOffset = 35f;
+        [SerializeField, Range(-180f, 180f), Tooltip("Home view: angle around the turbine from straight in front of the " +
+            "rotor (deg). A small angle shows the nacelle side too; 0 looks flat.")]
+        private float homeYawOffset = 20f;
+
+        [SerializeField, Range(0.5f, 1.3f), Tooltip("Home view distance as a multiple of the framing distance (1 = the " +
+            "whole turbine just fits). Below 1 the view also rises toward the hub.")]
+        private float homeZoom = 1f;
 
         [SerializeField, Range(-30f, 80f), Tooltip("Home view: camera angle above the pivot (deg). Negative looks up at the turbine.")]
         private float homeElevation = -4f;
@@ -85,7 +90,7 @@ namespace WindFarm.Cameras
         [SerializeField, Min(1f), Tooltip("Seconds without any touch, click or wheel before the camera starts to sway.")]
         private float idleDelay = 20f;
 
-        [SerializeField, Range(0f, 90f), Tooltip("Sway amplitude to each side of the home view (deg).")]
+        [SerializeField, Range(0f, 90f), Tooltip("Sway amplitude to each side of the rotor front (deg).")]
         private float swayAmplitude = 35f;
 
         [SerializeField, Min(1f), Tooltip("Duration of one full back-and-forth sway (s).")]
@@ -94,7 +99,7 @@ namespace WindFarm.Cameras
         [SerializeField, Min(0.1f), Tooltip("Time to blend from the last view into the sway (s).")]
         private float swayBlendTime = 8f;
 
-        private readonly Vector3[] envelope = new Vector3[EnvelopeSegments * 2];
+        private readonly Vector3[] envelope = new Vector3[4];
 
         private Camera targetCamera;
         private Rect viewport = new Rect(0f, 0f, 1f, 1f);
@@ -114,9 +119,10 @@ namespace WindFarm.Cameras
         private float idleTime;
         private bool swaying;
         private float swayTime;
-        private float swayStartOffset;      // yaw offset from home when the sway began (deg, -180..180)
-        private float swayBaseYaw;          // unwrapped home yaw near the camera's yaw when the sway began
-        private float swayBaseHomeYaw;      // home yaw (wrapped) at that moment, to follow the nacelle afterwards
+        private float swayStartOffset;      // yaw offset from the rotor front when the sway began (deg, -180..180)
+        private float swayPhase;            // sine phase that starts the sway at that offset (rad)
+        private float swayBaseYaw;          // unwrapped front yaw near the camera's yaw when the sway began
+        private float swayBaseFrontYaw;     // front yaw (wrapped) at that moment, to follow the nacelle afterwards
         private float swayStartElevation;
         private float swayStartZoom;
         private bool initialized;
@@ -164,7 +170,7 @@ namespace WindFarm.Cameras
             NotifyUserInput();
             targetYaw = UnwrapNear(HomeYaw(), targetYaw);
             targetElevation = homeElevation;
-            targetZoom = 1f;
+            targetZoom = homeZoom;
         }
 
         /// <summary>Any user input (also on the dashboard) restarts the idle timer and stops the sway where it is.</summary>
@@ -191,7 +197,7 @@ namespace WindFarm.Cameras
             MeasureTurbine();
             yaw = targetYaw = HomeYaw();
             elevation = targetElevation = homeElevation;
-            zoom = targetZoom = 1f;
+            zoom = targetZoom = homeZoom;
             initialized = true;
         }
 
@@ -220,8 +226,10 @@ namespace WindFarm.Cameras
         }
 
         /// <summary>
-        /// Rotor radius from the mesh bounds (the blades may point anywhere when this runs) and a vertical cylinder
-        /// around the tower axis that holds the rotor in every yaw position: framing does not change while orbiting.
+        /// Rotor radius from the mesh bounds (the blades may point anywhere when this runs) and the framing envelope:
+        /// a flat upright rectangle through the tower axis, rotor diameter wide, from the base to the top blade tip.
+        /// It is the turbine's silhouette seen from the front. A cylinder around the tower (every yaw position) was too
+        /// cautious: its near edge pushed the camera back and the turbine filled only ~2/3 of the free area.
         /// </summary>
         private void MeasureTurbine()
         {
@@ -249,18 +257,13 @@ namespace WindFarm.Cameras
                 rotorRadius = FallbackRotorRadius;
             }
 
-            Vector3 basePosition = turbine.position;
-            Vector3 hubOffset = hub - basePosition;
-            float radius = rotorRadius + new Vector2(hubOffset.x, hubOffset.z).magnitude;
-            envelopeHalfHeight = (hubOffset.y + rotorRadius) * 0.5f;
+            envelopeHalfHeight = (hub.y - turbine.position.y + rotorRadius) * 0.5f;
 
-            for (int i = 0; i < EnvelopeSegments; i++)
-            {
-                float angle = i * Mathf.PI * 2f / EnvelopeSegments;
-                var ring = new Vector3(Mathf.Cos(angle) * radius, 0f, Mathf.Sin(angle) * radius);
-                envelope[i] = ring + Vector3.down * envelopeHalfHeight;
-                envelope[i + EnvelopeSegments] = ring + Vector3.up * envelopeHalfHeight;
-            }
+            // Fitted with the camera looking along world +Z (UpdateFitDistance), so the rectangle spans world X.
+            envelope[0] = new Vector3(-rotorRadius, -envelopeHalfHeight, 0f);
+            envelope[1] = new Vector3(rotorRadius, -envelopeHalfHeight, 0f);
+            envelope[2] = new Vector3(-rotorRadius, envelopeHalfHeight, 0f);
+            envelope[3] = new Vector3(rotorRadius, envelopeHalfHeight, 0f);
         }
 
         /// <summary>Distance at which the turbine fills the viewport, seen from the home elevation.</summary>
@@ -294,23 +297,25 @@ namespace WindFarm.Cameras
                     return;
 
                 // Start from wherever the user left the camera; the offset keeps the shorter way back to the front.
+                // Inside the sway range the sine starts right at that offset (the home view is), so it just carries on.
                 swaying = true;
                 swayTime = 0f;
-                swayBaseHomeYaw = HomeYaw();
-                swayStartOffset = Mathf.DeltaAngle(swayBaseHomeYaw, targetYaw);
+                swayBaseFrontYaw = FrontYaw();
+                swayStartOffset = Mathf.DeltaAngle(swayBaseFrontYaw, targetYaw);
                 swayBaseYaw = targetYaw - swayStartOffset;
+                swayPhase = swayAmplitude > 0f ? Mathf.Asin(Mathf.Clamp(swayStartOffset / swayAmplitude, -1f, 1f)) : 0f;
                 swayStartElevation = targetElevation;
                 swayStartZoom = targetZoom;
             }
 
             swayTime += deltaTime;
             float blend = Mathf.SmoothStep(0f, 1f, swayTime / swayBlendTime);
-            float swayOffset = swayAmplitude * Mathf.Sin(swayTime * Mathf.PI * 2f / swayPeriod);
-            float homeYaw = swayBaseYaw + Mathf.DeltaAngle(swayBaseHomeYaw, HomeYaw());   // follows nacelle yaw
+            float swayOffset = swayAmplitude * Mathf.Sin(swayPhase + swayTime * Mathf.PI * 2f / swayPeriod);
+            float frontYaw = swayBaseYaw + Mathf.DeltaAngle(swayBaseFrontYaw, FrontYaw());   // follows nacelle yaw
 
-            targetYaw = homeYaw + Mathf.Lerp(swayStartOffset, swayOffset, blend);
+            targetYaw = frontYaw + Mathf.Lerp(swayStartOffset, swayOffset, blend);
             targetElevation = Mathf.Lerp(swayStartElevation, homeElevation, blend);
-            targetZoom = Mathf.Lerp(swayStartZoom, 1f, blend);
+            targetZoom = Mathf.Lerp(swayStartZoom, homeZoom, blend);
         }
 
         private void ApplyPose()
@@ -362,13 +367,15 @@ namespace WindFarm.Cameras
             return Mathf.Max(minDistance, Mathf.Min(inFront, beside));
         }
 
-        /// <summary>Camera yaw that looks at the rotor from its front, turned by the home offset.</summary>
-        private float HomeYaw()
+        /// <summary>Camera yaw that looks at the rotor straight from its front.</summary>
+        private float FrontYaw()
         {
             // The camera looks along -forward of the rotor (it stands upwind, facing the spinner nose).
             Vector3 front = rotor.forward;
-            return Mathf.Atan2(-front.x, -front.z) * Mathf.Rad2Deg + homeYawOffset;
+            return Mathf.Atan2(-front.x, -front.z) * Mathf.Rad2Deg;
         }
+
+        private float HomeYaw() => FrontYaw() + homeYawOffset;
 
         private static float UnwrapNear(float angle, float reference) => reference + Mathf.DeltaAngle(reference, angle);
 
