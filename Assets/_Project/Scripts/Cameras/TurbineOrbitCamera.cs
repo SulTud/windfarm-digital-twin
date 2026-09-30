@@ -26,6 +26,7 @@ namespace WindFarm.Cameras
         private const float FallbackRotorRadius = 50f;
         private const float FitSmoothingTime = 0.25f;     // s; layout changes re-frame smoothly
         private const float NearClipFraction = 0.02f;     // near plane at 2 % of the distance: depth precision far away
+        private const float ClearancePushTime = 0.08f;    // s; backing off from the blades is quick but not a jump
 
         [Header("Target")]
         [SerializeField, Tooltip("Turbine root. Its position is the tower base on the ground.")]
@@ -73,12 +74,17 @@ namespace WindFarm.Cameras
         [SerializeField, Range(1f, 2f), Tooltip("Farthest zoom as a multiple of the framing distance.")]
         private float maxZoomOut = 1.3f;
 
-        [SerializeField, Min(1f), Tooltip("Closest distance to the pivot (m). Up close the camera looks at the hub.")]
+        [SerializeField, Min(1f), Tooltip("Closest distance to the pivot (m). Up close the camera looks at the drivetrain.")]
         private float minDistance = 30f;
 
-        [SerializeField, Min(0f), Tooltip("Distance kept in front of / behind the rotor plane (m). The 6 deg tilt swings " +
-            "the blade tips ~6 m out of the hub plane.")]
-        private float rotorPlaneClearance = 15f;
+        [SerializeField, Min(0f), Tooltip("Close-up focus: distance behind the hub along the shaft (m). On the drivetrain, " +
+            "where X-Ray shows something; also puts the blade plane in front of the focus, so the camera can come close " +
+            "from the side and from behind.")]
+        private float xRayFocusOffset = 7.5f;
+
+        [SerializeField, Min(0f), Tooltip("Distance kept from the plane the blades turn in (m), measured along the tilted " +
+            "rotor axis, while the camera is within the blade sweep.")]
+        private float bladePlaneClearance = 5f;
 
         [SerializeField, Min(0f), Tooltip("Distance kept outside the blade tips when the camera is beside the rotor (m).")]
         private float bladeTipClearance = 10f;
@@ -115,6 +121,7 @@ namespace WindFarm.Cameras
         private float targetYaw;
         private float targetElevation;
         private float targetZoom = 1f;
+        private float clearancePush;        // extra distance that keeps the camera out of the blade sweep (m, smoothed)
 
         private float idleTime;
         private bool swaying;
@@ -222,7 +229,7 @@ namespace WindFarm.Cameras
             elevation += (targetElevation - elevation) * blend;
             zoom += (targetZoom - zoom) * blend;
 
-            ApplyPose();
+            ApplyPose(deltaTime);
         }
 
         /// <summary>
@@ -297,13 +304,15 @@ namespace WindFarm.Cameras
                     return;
 
                 // Start from wherever the user left the camera; the offset keeps the shorter way back to the front.
-                // Inside the sway range the sine starts right at that offset (the home view is), so it just carries on.
+                // Inside the sway range the sine starts right at that offset (the home view is), on the branch that
+                // heads for the far side first: from the home view the long swing across the front comes first.
                 swaying = true;
                 swayTime = 0f;
                 swayBaseFrontYaw = FrontYaw();
                 swayStartOffset = Mathf.DeltaAngle(swayBaseFrontYaw, targetYaw);
                 swayBaseYaw = targetYaw - swayStartOffset;
-                swayPhase = swayAmplitude > 0f ? Mathf.Asin(Mathf.Clamp(swayStartOffset / swayAmplitude, -1f, 1f)) : 0f;
+                float startPhase = swayAmplitude > 0f ? Mathf.Asin(Mathf.Clamp(swayStartOffset / swayAmplitude, -1f, 1f)) : 0f;
+                swayPhase = swayStartOffset >= 0f ? Mathf.PI - startPhase : startPhase;
                 swayStartElevation = targetElevation;
                 swayStartZoom = targetZoom;
             }
@@ -318,18 +327,24 @@ namespace WindFarm.Cameras
             targetZoom = Mathf.Lerp(swayStartZoom, homeZoom, blend);
         }
 
-        private void ApplyPose()
+        private void ApplyPose(float deltaTime)
         {
-            Vector3 hub = rotor.position;
             Vector3 center = turbine.position + Vector3.up * envelopeHalfHeight;
+            Vector3 closeFocus = rotor.position - rotor.forward * xRayFocusOffset;
 
-            // Zooming in shifts the focus from the whole turbine to the hub and nacelle.
+            // Zooming in shifts the focus from the whole turbine to the drivetrain in the nacelle.
             float focus = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(1f, 0.5f, zoom));
-            Vector3 pivot = Vector3.Lerp(center, hub, focus);
+            Vector3 pivot = Vector3.Lerp(center, closeFocus, focus);
 
             Quaternion rotation = Quaternion.Euler(elevation, yaw, 0f);
             Vector3 forward = rotation * Vector3.forward;
-            float distance = Mathf.Max(zoom * fitDistance, RotorClearanceDistance(-forward));
+
+            // Blade sweep: back off quickly, come back in with the normal smoothing (like a game camera's spring arm).
+            float wanted = zoom * fitDistance;
+            float push = SweepFreeDistance(pivot, -forward, wanted) - wanted;
+            float pushTime = push > clearancePush ? ClearancePushTime : smoothingTime;
+            clearancePush += (push - clearancePush) * (1f - Mathf.Exp(-deltaTime / pushTime));
+            float distance = wanted + Mathf.Max(0f, clearancePush);
 
             // Ground clearance: raise the camera angle rather than move the pivot. Also stops the target from winding up.
             float lowest = Mathf.Asin(Mathf.Clamp((turbine.position.y + minCameraHeight - pivot.y) / distance, -1f, 1f)) *
@@ -355,16 +370,44 @@ namespace WindFarm.Cameras
         }
 
         /// <summary>
-        /// Closest safe distance in a direction from the pivot: in front of or behind the rotor the camera may come
-        /// close, beside it the blades sweep through, so it stays outside the tips.
+        /// The wanted distance if the camera is out of the blade sweep there, otherwise the distance along the same
+        /// ray where it leaves the sweep. The sweep is a thin disc: closer than the clearance to the blade plane
+        /// (normal = the tilted rotor axis) and inside the tip radius plus clearance. With the close-up focus behind
+        /// the hub, a camera beside the nacelle stays behind that plane and may come close.
         /// </summary>
-        private float RotorClearanceDistance(Vector3 directionFromPivot)
+        private float SweepFreeDistance(Vector3 pivot, Vector3 directionFromPivot, float wanted)
         {
             Vector3 axis = rotor.forward;
-            float along = Mathf.Abs(Vector3.Dot(directionFromPivot, axis));
-            float beside = rotorRadius + bladeTipClearance;
-            float inFront = along > 0.001f ? rotorPlaneClearance / along : beside;
-            return Mathf.Max(minDistance, Mathf.Min(inFront, beside));
+            Vector3 fromHub = pivot - rotor.position;
+            float sweepRadius = rotorRadius + bladeTipClearance;
+
+            // Position along the ray: plane offset s(t) = s0 + t * along, radial offset p0 + t * across.
+            float s0 = Vector3.Dot(fromHub, axis);
+            float along = Vector3.Dot(directionFromPivot, axis);
+            Vector3 p0 = fromHub - axis * s0;
+            Vector3 across = directionFromPivot - axis * along;
+
+            float plane = s0 + wanted * along;
+            if (Mathf.Abs(plane) >= bladePlaneClearance || (p0 + across * wanted).magnitude >= sweepRadius)
+                return wanted;
+
+            // Leave through the far face of the disc...
+            float exitPlane = float.PositiveInfinity;
+            if (along > 1e-4f)
+                exitPlane = (bladePlaneClearance - s0) / along;
+            else if (along < -1e-4f)
+                exitPlane = (-bladePlaneClearance - s0) / along;
+
+            // ...or past the blade tips (larger root of |p0 + t * across| = sweepRadius).
+            float exitTips = float.PositiveInfinity;
+            float a = across.sqrMagnitude;
+            float b = 2f * Vector3.Dot(p0, across);
+            float discriminant = b * b - 4f * a * (p0.sqrMagnitude - sweepRadius * sweepRadius);
+            if (a > 1e-6f && discriminant >= 0f)
+                exitTips = (-b + Mathf.Sqrt(discriminant)) / (2f * a);
+
+            float exit = Mathf.Min(exitPlane, exitTips);
+            return float.IsInfinity(exit) ? wanted : Mathf.Max(wanted, exit);
         }
 
         /// <summary>Camera yaw that looks at the rotor straight from its front.</summary>
