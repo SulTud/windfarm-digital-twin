@@ -99,7 +99,7 @@ namespace WindFarm.Visuals
         [SerializeField, Tooltip("Brake caliper renderer. Its first material is instanced; enable Emission on it for the glow.")]
         private Renderer brakeCaliperRenderer;
 
-        [SerializeField, Min(0f), Tooltip("During storm shutdown the mechanical brake engages below this rotor speed (RPM). " +
+        [SerializeField, Min(0f), Tooltip("During a storm or fault stop the mechanical brake engages below this rotor speed (RPM). " +
                                           "Real turbines brake aerodynamically (feathering) first; the disc brake only holds a slow rotor.")]
         private float brakeEngageRpm = 3f;
 
@@ -299,8 +299,10 @@ namespace WindFarm.Visuals
                 mainShaft.localRotation = mainShaftInitialRotation * spin;
         }
 
+        // Both protective stops feather the blades first, then the disc brake holds the rotor.
         private bool IsBrakeEngaged() =>
-            latest.State == TurbineOperatingState.StormShutdown && smoothedRpm < brakeEngageRpm;
+            (latest.State == TurbineOperatingState.StormShutdown || latest.State == TurbineOperatingState.FaultStop)
+            && smoothedRpm < brakeEngageRpm;
 
         private void UpdateBrake(float deltaTime)
         {
