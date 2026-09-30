@@ -53,6 +53,11 @@ namespace WindFarm.Simulation
         private float currentPowerMW;
         private float physicsAccumulator;
         private float publishAccumulator;
+        private bool prewarming;
+
+        // Startup values restored by ResetSimulation (the demo controls change them at runtime).
+        private float initialMeanWindSpeed;
+        private float initialSimulationSpeed;
 
         public event Action<TurbineTelemetry> TelemetryUpdated;
         public event Action<TurbineOperatingState, TurbineOperatingState> OperatingStateChanged;
@@ -78,8 +83,39 @@ namespace WindFarm.Simulation
         public void SetMeanWindSpeed(float metersPerSecond) =>
             windConditions.MeanWindSpeed = Mathf.Max(0f, metersPerSecond);
 
+        /// <summary>
+        /// Starts over as on scene load: startup mean wind and simulation speed, fresh models (new random streams
+        /// unless a seed is set), clock and energy counter at zero, then the prewarm. Publishes at once. Consumers see
+        /// the simulation time jump back, which is also how a restarted real source would look.
+        /// </summary>
+        public void ResetSimulation()
+        {
+            windConditions.MeanWindSpeed = initialMeanWindSpeed;
+            simulationSpeed = initialSimulationSpeed;
+
+            TurbineOperatingState previousState = controller.State;
+            Initialize();
+            if (controller.State != previousState)
+                OperatingStateChanged?.Invoke(previousState, controller.State);
+
+            publishAccumulator = 0f;
+            TelemetryUpdated?.Invoke(LatestTelemetry);
+        }
+
         private void Awake()
         {
+            initialMeanWindSpeed = windConditions.MeanWindSpeed;
+            initialSimulationSpeed = simulationSpeed;
+            Initialize();
+        }
+
+        private void Initialize()
+        {
+            simulationTime = 0.0;
+            totalEnergyMWh = 0.0;
+            currentPowerMW = 0f;
+            physicsAccumulator = 0f;
+
             BuildModels();
             Prewarm();
             LatestTelemetry = SampleSensors();
@@ -126,9 +162,12 @@ namespace WindFarm.Simulation
 
         private void Prewarm()
         {
+            // State changes during the prewarm are history nobody saw: consumers only get the resulting state.
+            prewarming = true;
             int steps = Mathf.CeilToInt(prewarmSeconds / physicsTimeStep);
             for (int i = 0; i < steps; i++)
                 StepPhysics(physicsTimeStep);
+            prewarming = false;
         }
 
         private void StepPhysics(float deltaTime)
@@ -137,7 +176,7 @@ namespace WindFarm.Simulation
             float windSpeed = wind.CurrentSpeed;
 
             TurbineOperatingState previousState = controller.State;
-            if (controller.Step(deltaTime, windSpeed, currentPowerMW))
+            if (controller.Step(deltaTime, windSpeed, currentPowerMW) && !prewarming)
                 OperatingStateChanged?.Invoke(previousState, controller.State);
 
             bool connected = controller.IsGeneratorConnected;

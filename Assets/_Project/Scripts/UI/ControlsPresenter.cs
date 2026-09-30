@@ -1,16 +1,17 @@
 using System;
 using UnityEngine;
 using UnityEngine.UIElements;
+using WindFarm.Cameras;
 using WindFarm.Simulation;
 using WindFarm.Visuals;
 
 namespace WindFarm.UI
 {
     /// <summary>
-    /// Demo controls: site mean wind slider, simulation speed buttons and the X-Ray toggles (dock button on PC,
-    /// floating button on phones).
+    /// Demo controls: site mean wind slider, simulation speed buttons, the X-Ray toggles (dock button on PC,
+    /// floating button on phones) and the reset button (restarts the simulation, turns X-Ray off, camera home).
     ///
-    /// These drive the mock simulator directly (SetMeanWindSpeed / SimulationSpeed), so they take the concrete
+    /// These drive the mock simulator directly (SetMeanWindSpeed / SimulationSpeed / ResetSimulation), so they take the concrete
     /// TurbineDataSimulator. With a real SCADA source there is nothing to control and this presenter would not be
     /// created. Every frame the controls re-sync from the simulator, so Inspector changes in Play mode show up too.
     /// </summary>
@@ -23,6 +24,7 @@ namespace WindFarm.UI
 
         private readonly TurbineDataSimulator simulator;
         private readonly TurbineVisualController visuals;
+        private readonly TurbineOrbitCamera orbitCamera;
 
         private readonly Slider windSlider;
         private readonly Label windValue;
@@ -30,15 +32,18 @@ namespace WindFarm.UI
         private readonly Action[] speedHandlers = new Action[SpeedOptions.Length];
         private readonly Button xRayButton;
         private readonly Button xRayFab;
+        private readonly Button resetButton;
 
         private float shownWind = float.NaN;
         private float shownSpeed = float.NaN;
         private int shownXRay = -1;
 
-        public ControlsPresenter(VisualElement root, TurbineDataSimulator simulator, TurbineVisualController visuals)
+        public ControlsPresenter(VisualElement root, TurbineDataSimulator simulator, TurbineVisualController visuals,
+            TurbineOrbitCamera orbitCamera)
         {
             this.simulator = simulator;
             this.visuals = visuals;
+            this.orbitCamera = orbitCamera;
 
             windSlider = root.Require<Slider>("wind-slider");
             windValue = root.Require<Label>("wind-setting-value");
@@ -63,6 +68,9 @@ namespace WindFarm.UI
             xRayButton.SetEnabled(hasVisuals);
             xRayFab.SetEnabled(hasVisuals);
 
+            resetButton = root.Require<Button>("reset-button");
+            resetButton.clicked += ResetAll;
+
             Sync();
         }
 
@@ -73,6 +81,7 @@ namespace WindFarm.UI
                 speedButtons[i].clicked -= speedHandlers[i];
             xRayButton.clicked -= ToggleXRay;
             xRayFab.clicked -= ToggleXRay;
+            resetButton.clicked -= ResetAll;
         }
 
         /// <summary>Called every frame: reflect the simulator state (it may also change from the Inspector).</summary>
@@ -92,6 +101,16 @@ namespace WindFarm.UI
         {
             if (visuals != null)
                 visuals.XRayEnabled = !visuals.XRayEnabled;
+        }
+
+        /// <summary>Back to the state a visitor sees on page load. The controls re-sync on the next Tick.</summary>
+        private void ResetAll()
+        {
+            simulator.ResetSimulation();
+            if (visuals != null)
+                visuals.XRayEnabled = false;
+            if (orbitCamera != null)
+                orbitCamera.ResetView();
         }
 
         private void Sync()

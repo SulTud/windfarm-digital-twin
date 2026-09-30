@@ -178,6 +178,11 @@
                 <ui:Label class="card__label" text="HOUSING" />
                 <ui:Button name="xray-button" class="segmented__item segmented__item--single" text="X-RAY" />
             </ui:VisualElement>
+            <!-- Full restart: simulation, startup wind and speed, X-Ray off, camera home. Also on phones. -->
+            <ui:VisualElement name="reset-group" class="dock__group dock__group--reset">
+                <ui:Label class="card__label" text="SIMULATION" />
+                <ui:Button name="reset-button" class="segmented__item segmented__item--single" text="RESET" />
+            </ui:VisualElement>
         </ui:VisualElement>
 
         <!--

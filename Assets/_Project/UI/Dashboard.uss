@@ -626,7 +626,7 @@
 
 .dock {
     align-self: center;
-    width: 600px;
+    width: 700px;
     max-width: 100%;
     flex-direction: row;
     align-items: flex-start;
@@ -642,7 +642,8 @@
     margin-right: 20px;
 }
 
-.dock__group--speed {
+.dock__group--speed,
+.dock__group--xray {
     margin-right: 20px;
 }
 
@@ -996,7 +997,13 @@
 }
 
 .dashboard--portrait .dock__group--wind {
-    margin-right: 0;
+    margin-right: 14px;
+}
+
+/* Reset sits at the end of the wind row on phones, with a finger-sized button. */
+.dashboard--portrait .dock__group--reset .segmented__item {
+    padding: 7px 12px;
+    font-size: 13px;
 }
 
 /*

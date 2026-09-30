@@ -71,7 +71,7 @@ namespace WindFarm.UI
             alerts = new AlertsPresenter(root, specs);
             trendChart = new TrendChartPresenter(root, specs, history);
             powerCurve = new PowerCurvePresenter(root, specs);
-            controls = new ControlsPresenter(root, simulator, turbineVisuals);
+            controls = new ControlsPresenter(root, simulator, turbineVisuals, orbitCamera);
             if (orbitCamera != null)
                 sceneView = new SceneViewPresenter(root, orbitCamera);
 
