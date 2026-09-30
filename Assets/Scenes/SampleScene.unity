@@ -220,6 +220,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::WindFarm.UI.DashboardController
   simulator: {fileID: 1145990849}
   turbineVisuals: {fileID: 1352469945}
+  orbitCamera: {fileID: 330585548}
   turbineClass: V112-class
   hubHeight: 94
 --- !u!114 &116683439
@@ -246,6 +247,7 @@ GameObject:
   - component: {fileID: 330585545}
   - component: {fileID: 330585544}
   - component: {fileID: 330585547}
+  - component: {fileID: 330585548}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -371,6 +373,40 @@ MonoBehaviour:
     m_VarianceClampScale: 0.9
     m_ContrastAdaptiveSharpening: 0
   m_Version: 2
+--- !u!114 &330585548
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 330585543}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: eccac7630eab47f297c4b4cbe8dfe15b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::WindFarm.Cameras.TurbineOrbitCamera
+  turbine: {fileID: 1352469946}
+  rotor: {fileID: 1598709564}
+  fieldOfView: 40
+  framingMargin: 0.08
+  farClipMargin: 1500
+  homeYawOffset: 20
+  homeZoom: 0.8
+  homeElevation: -4
+  minElevation: -10
+  maxElevation: 60
+  orbitSensitivity: 0.3
+  smoothingTime: 0.12
+  maxZoomOut: 1.3
+  minDistance: 30
+  xRayFocusOffset: 7.5
+  bladePlaneClearance: 5
+  bladeTipClearance: 10
+  minCameraHeight: 5
+  idleDelay: 20
+  swayAmplitude: 35
+  swayPeriod: 60
+  swayBlendTime: 8
 --- !u!1001 &350531012
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -697,7 +733,12 @@ MonoBehaviour:
     <RatedRotorRpm>k__BackingField: 14
     <OptimalTipSpeedRatio>k__BackingField: 7.5
     <MaxPowerCoefficient>k__BackingField: 0.45
+    <RotorInertia>k__BackingField: 24000000
     <RotorTimeConstant>k__BackingField: 7
+    <PitchSensitivityAngle>k__BackingField: 12
+    <MaxPitchRate>k__BackingField: 8
+    <IdlePitch>k__BackingField: 70
+    <FeatherPitch>k__BackingField: 90
     <RatedPowerMW>k__BackingField: 3
     <DrivetrainEfficiency>k__BackingField: 0.94
     <CutInWindSpeed>k__BackingField: 3
@@ -726,6 +767,7 @@ MonoBehaviour:
   sensorNoise:
     <WindSpeedStdDev>k__BackingField: 0.15
     <RotorRpmStdDev>k__BackingField: 0.04
+    <PitchResolution>k__BackingField: 0.1
     <TemperatureStdDev>k__BackingField: 0.1
     <PowerStdDevFraction>k__BackingField: 0.004
   physicsTimeStep: 0.05
@@ -840,12 +882,7 @@ MonoBehaviour:
   - {fileID: 1858947449}
   - {fileID: 820437466}
   - {fileID: 1638919130}
-  idlePitch: 70
-  featherPitch: 90
-  ratedWindSpeed: 11
-  pitchAtCutOut: 25
-  pitchRate: 8
-  windSmoothingTime: 2
+  pitchSmoothingTime: 0.25
   invertPitchDirection: 0
   heatRenderers:
   - {fileID: 455689774}
@@ -873,6 +910,11 @@ MonoBehaviour:
   xRayOpacity: 0.12
   xRayFadeTime: 0.5
   xRayEnabled: 0
+--- !u!4 &1352469946 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 5a47e18a9c33a02499b836473ecd6ea2, type: 3}
+  m_PrefabInstance: {fileID: 350531012}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1365045597
 GameObject:
   m_ObjectHideFlags: 0
