@@ -15,8 +15,14 @@ mergeInto(LibraryManager.library, {
       if (url.indexOf("mailto:") === 0) {
         window.location.href = url;
       } else {
-        var tab = window.open(url, "_blank", "noopener");
-        if (!tab) window.location.href = url;
+        // No "noopener" feature: with it window.open always returns null, so a blocked popup could not be told
+        // apart from an opened tab and the demo page navigated away as well. Cut the opener link by hand instead.
+        var tab = window.open(url, "_blank");
+        if (tab) {
+          try { tab.opener = null; } catch (e) { }
+        } else {
+          window.location.href = url;
+        }
       }
     }
 
