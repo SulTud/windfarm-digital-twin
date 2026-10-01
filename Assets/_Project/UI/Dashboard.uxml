@@ -5,6 +5,8 @@
         lies on top of it and takes its own presses; only presses on the empty scene reach it.
     -->
     <ui:VisualElement name="scene-input" class="scene-input" />
+    <!-- 3D callouts (SceneCalloutsPresenter): above the scene, below every panel and control. -->
+    <ui:VisualElement name="callout-layer" class="callout-layer" picking-mode="Ignore" />
     <ui:VisualElement name="dashboard" class="dashboard" picking-mode="Ignore">
 
         <!-- 1 + 7: identity, operating state with a plain-language explanation, sim clock and data source -->
@@ -123,6 +125,8 @@
                             <ui:Label name="notification-title" class="notification__title" text="Storm shutdown" picking-mode="Ignore" />
                             <ui:Label name="notification-message" class="notification__message" text="Wind above cut-out." picking-mode="Ignore" />
                         </ui:VisualElement>
+                        <!-- Generator events: X-Ray on and the camera glides to the drivetrain. Hidden otherwise. -->
+                        <ui:Button name="notification-action" class="notification__action" text="SHOW" />
                     </ui:VisualElement>
                 </ui:VisualElement>
                 <ui:VisualElement name="scene-actions" class="scene-actions" picking-mode="Ignore">

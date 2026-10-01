@@ -159,6 +159,27 @@ namespace WindFarm.Visuals
         private UnityEngine.Rendering.ShadowCastingMode housingShadowMode;
         private float xRayBlend;
 
+        /// <summary>Spinner (hub center = its pivot). Anchor for 3D callouts at the rotor.</summary>
+        public Transform Rotor => rotor;
+
+        /// <summary>
+        /// Roof cooler renderer (the heat renderer named "Cooler", else the first one), for 3D callouts: the heat
+        /// exchanger the cooling fan pushes air through, visible without X-Ray.
+        /// </summary>
+        public Renderer CoolerRenderer
+        {
+            get
+            {
+                foreach (Renderer heatRenderer in heatRenderers)
+                {
+                    if (heatRenderer != null && heatRenderer.name == "Cooler")
+                        return heatRenderer;
+                }
+
+                return heatRenderers.Length > 0 ? heatRenderers[0] : null;
+            }
+        }
+
         /// <summary>Fades the nacelle housing to transparent to reveal the drivetrain and the heat colors.</summary>
         public bool XRayEnabled
         {

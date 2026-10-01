@@ -41,6 +41,8 @@ namespace WindFarm.UI
         private readonly VisualElement notification;
         private readonly Label notificationTitle;
         private readonly Label notificationMessage;
+        private readonly Button notificationAction;
+        private readonly System.Action showGenerator;
         private readonly VisualElement zoneNormal;
         private readonly VisualElement zoneWarning;
         private readonly VisualElement zoneAlarm;
@@ -63,10 +65,15 @@ namespace WindFarm.UI
         private int shownBannerTemperature = int.MinValue;
         private int shownBannerLimit = int.MinValue;
 
-        public AlertsPresenter(VisualElement root, TurbineSpecs specs)
+        /// <param name="showGenerator">SHOW action on generator banners (X-Ray + camera to the drivetrain); null hides the button.</param>
+        public AlertsPresenter(VisualElement root, TurbineSpecs specs, System.Action showGenerator)
         {
             this.root = root;
             this.specs = specs;
+            this.showGenerator = showGenerator;
+
+            notificationAction = root.Require<Button>("notification-action");
+            notificationAction.clicked += HandleShowClicked;
 
             chip = root.Require<Label>("temp-chip");
             card = root.Require<VisualElement>("temp-card");
@@ -113,8 +120,11 @@ namespace WindFarm.UI
 
         public void Dispose()
         {
+            notificationAction.clicked -= HandleShowClicked;
             root.RemoveFromClassList(BannerClass);
         }
+
+        private void HandleShowClicked() => showGenerator?.Invoke();
 
         public void Show(in TurbineTelemetry telemetry)
         {
@@ -260,9 +270,13 @@ namespace WindFarm.UI
             else
             {
                 SetBannerVisible(false);
+                SetActionVisible(false);
                 shownBannerKey = null;
                 return;
             }
+
+            // Every banner except the storm is about the generator: offer the close look at it.
+            SetActionVisible(showGenerator != null && key != "storm");
 
             if (key == shownBannerKey && temperature == shownBannerTemperature && limitTenths == shownBannerLimit)
                 return;
@@ -276,6 +290,11 @@ namespace WindFarm.UI
             notification.EnableInClassList(NotificationClasses[1], critical);
             SetBannerVisible(true);
         }
+
+        // The banner fades with opacity and stays in the layout: the button must be removed, not only invisible,
+        // or it would still catch taps on the hidden banner.
+        private void SetActionVisible(bool visible) =>
+            notificationAction.EnableInClassList("notification__action--on", visible);
 
         private void SetBannerVisible(bool visible)
         {

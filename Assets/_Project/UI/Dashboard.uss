@@ -78,12 +78,112 @@
 }
 
 /* Invisible, under the whole dashboard: presses on the empty scene orbit and zoom the camera. */
-.scene-input {
+.scene-input,
+.callout-layer {
     position: absolute;
     left: 0;
     top: 0;
     right: 0;
     bottom: 0;
+}
+
+/* ---------- 3D callouts (SceneCallout, moved with translate to the projected anchor) ---------- */
+
+.callout {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 0;
+    height: 0;
+    opacity: 0;
+    transition-property: opacity;
+    transition-duration: 0.3s;
+    color: var(--accent);
+}
+
+.callout--on {
+    opacity: 1;
+}
+
+.callout--warn {
+    color: var(--warn);
+}
+
+/* Box around the anchor; SceneCallout sizes it inline (it grows with the lift) and draws the leader line in it. */
+.callout__line {
+    position: absolute;
+}
+
+.callout__dot {
+    position: absolute;
+    left: -4px;
+    top: -4px;
+    width: 8px;
+    height: 8px;
+    border-radius: 4px;
+    border-width: 2px;
+    border-color: var(--panel-solid);
+    background-color: var(--accent);
+}
+
+.callout--warn .callout__dot {
+    background-color: var(--warn);
+}
+
+.callout__box {
+    position: absolute;
+    translate: 0 -50%;
+    padding: 4px 8px 5px 8px;
+    background-color: rgba(19, 35, 45, 0.88);
+    border-width: 1px;
+    border-left-width: 3px;
+    border-color: var(--line-strong);
+    border-left-color: var(--accent);
+    border-radius: 6px;
+}
+
+.callout--left .callout__box {
+    border-left-width: 1px;
+    border-right-width: 3px;
+    border-left-color: var(--line-strong);
+    border-right-color: var(--accent);
+    align-items: flex-end;
+}
+
+.callout--warn .callout__box {
+    border-left-color: var(--warn);
+}
+
+.callout--warn.callout--left .callout__box {
+    border-left-color: var(--line-strong);
+    border-right-color: var(--warn);
+}
+
+.callout__title {
+    -unity-font-definition: url("Fonts/BarlowCondensed-SemiBold SDF.asset");
+    font-size: 12px;
+    letter-spacing: 0.8px;
+    color: var(--muted);
+    white-space: nowrap;
+}
+
+.callout--warn .callout__title {
+    color: var(--warn);
+}
+
+.callout__value {
+    -unity-font-definition: url("Fonts/IBMPlexMono-Medium SDF.asset");
+    font-size: 15px;
+    color: var(--ink);
+    white-space: nowrap;
+}
+
+/* The layer is outside #dashboard, so nothing inherits the dashboard fonts: every label sets its own. */
+.callout__note {
+    -unity-font-definition: url("Fonts/Barlow-Regular SDF.asset");
+    font-size: 11px;
+    color: var(--ink-2);
+    white-space: nowrap;
 }
 
 /* ---------- Top bar ---------- */
@@ -446,6 +546,31 @@
 .notification__body {
     flex-grow: 1;
     flex-shrink: 1;
+}
+
+/* SHOW on generator banners. display (not opacity): the hidden banner must not catch taps. */
+.dashboard .notification__action {
+    display: none;
+    align-self: center;
+    flex-shrink: 0;
+    margin: 0 0 0 12px;
+    padding: 6px 12px;
+    font-size: 13px;
+    letter-spacing: 1px;
+    color: var(--accent);
+    background-color: var(--accent-dim);
+    border-width: 1px;
+    border-color: rgba(92, 198, 224, 0.5);
+    border-radius: 6px;
+}
+
+.dashboard .notification__action:hover {
+    background-color: var(--hover);
+    color: var(--ink);
+}
+
+.dashboard .notification__action--on {
+    display: flex;
 }
 
 .notification__title {

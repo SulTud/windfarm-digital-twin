@@ -13,8 +13,12 @@ namespace WindFarm.UI
     ///
     /// Follows the project consumer pattern: concrete simulator serialized, used through ITurbineTelemetrySource,
     /// subscribed in OnEnable and unsubscribed in OnDisable.
+    ///
+    /// Runs late (execution order 100): its LateUpdate places the 3D callouts after the orbit camera has moved in
+    /// the same frame, so they do not trail the camera by a frame.
     /// </summary>
     [DisallowMultipleComponent]
+    [DefaultExecutionOrder(100)]
     [RequireComponent(typeof(UIDocument))]
     public sealed class DashboardController : MonoBehaviour
     {
@@ -46,6 +50,7 @@ namespace WindFarm.UI
         private PowerCurvePresenter powerCurve;
         private ControlsPresenter controls;
         private SceneViewPresenter sceneView;
+        private SceneCalloutsPresenter callouts;
 
         private void OnEnable()
         {
@@ -68,12 +73,16 @@ namespace WindFarm.UI
                 turbineClass, specs.RatedPowerMW, hubHeight);
             statusBar = new StatusBarPresenter(root, specs, classText);
             valueCards = new ValueCardsPresenter(root, specs);
-            alerts = new AlertsPresenter(root, specs);
+            if (orbitCamera != null)
+            {
+                sceneView = new SceneViewPresenter(root, orbitCamera);
+                callouts = new SceneCalloutsPresenter(root, specs, orbitCamera, turbineVisuals);
+            }
+
+            alerts = new AlertsPresenter(root, specs, callouts != null && callouts.CanShowFault ? callouts.FocusFault : null);
             trendChart = new TrendChartPresenter(root, specs, history);
             powerCurve = new PowerCurvePresenter(root, specs);
             controls = new ControlsPresenter(root, simulator, turbineVisuals, orbitCamera);
-            if (orbitCamera != null)
-                sceneView = new SceneViewPresenter(root, orbitCamera);
 
             source = simulator;
             source.TelemetryUpdated += HandleTelemetry;
@@ -103,6 +112,13 @@ namespace WindFarm.UI
             controls = null;
             sceneView?.Dispose();
             sceneView = null;
+            callouts?.Dispose();
+            callouts = null;
+        }
+
+        private void LateUpdate()
+        {
+            callouts?.Tick();
         }
 
         private void Update()
@@ -125,6 +141,7 @@ namespace WindFarm.UI
             alerts.Show(telemetry);
             trendChart.Show(telemetry);
             powerCurve.Show(telemetry);
+            callouts?.Show(telemetry);
         }
 
 #if UNITY_EDITOR
