@@ -545,18 +545,29 @@
     padding: 16px;
 }
 
-/* Equal column widths keep the free space (and the dock in it) centered under the turbine. */
+/*
+ * Equal column widths keep the free space (and the dock in it) centered under the turbine. The columns never
+ * shrink: on a narrow window the wide dock used to squeeze them and the card texts overlapped.
+ */
 .left-column {
     width: 300px;
+    flex-shrink: 0;
 }
 
 .right-column {
     width: 300px;
+    flex-shrink: 0;
 }
 
-/* On PC, DashboardLayout places the dock here, centered at the bottom between the columns. */
+/*
+ * On PC, DashboardLayout places the dock here, centered at the bottom between the columns. Basis 0 and min-width 0:
+ * the space takes what the columns leave instead of growing to the dock's width, so the dock's max-width applies.
+ */
 .scene-space {
     flex-grow: 1;
+    flex-shrink: 1;
+    flex-basis: 0;
+    min-width: 0;
     justify-content: flex-end;
     margin: 0 16px;
 }
@@ -1497,6 +1508,34 @@
 
 .dashboard--short .energy-card,
 .dashboard--short #curve-card {
+    display: none;
+}
+
+/*
+ * Narrow PC window (ResponsivePanel.NarrowClass, < 1440 logical px, e.g. a 1280-1366 px laptop): the dock wraps
+ * into two rows (the wind slider on its own full-width row, the buttons below) and the long state explanation
+ * leaves the top bar (the pill stays; the banner explains protective events).
+ */
+.dashboard--narrow .dock {
+    flex-wrap: wrap;
+    padding: 10px 14px;
+}
+
+.dashboard--narrow .dock__group--wind {
+    width: 100%;
+    flex-grow: 0;
+    margin-right: 0;
+    margin-bottom: 8px;
+}
+
+.dashboard--narrow .dock__group--speed,
+.dashboard--narrow .dock__group--xray,
+.dashboard--narrow .dock__group--lights,
+.dashboard--narrow .dock__group--fault {
+    margin-right: 12px;
+}
+
+.dashboard--narrow .top-bar .state-explanation {
     display: none;
 }
 

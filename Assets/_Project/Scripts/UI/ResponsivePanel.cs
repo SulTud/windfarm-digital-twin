@@ -24,6 +24,7 @@ namespace WindFarm.UI
         public const string PortraitClass = "dashboard--portrait";
         public const string LandscapeClass = "dashboard--landscape";
         public const string ShortClass = "dashboard--short";
+        public const string NarrowClass = "dashboard--narrow";
         public const string RotateClass = "dashboard--rotate";
 
         // Screens above this DPI are treated as phones in the Editor fallback (Device Simulator).
@@ -39,6 +40,12 @@ namespace WindFarm.UI
 
         [SerializeField, Min(0f), Tooltip("Landscape screens lower than this (logical px) get the compact 'short' layout.")]
         private float shortHeight = 560f;
+
+        // A 1280-1366 px laptop browser window is narrower than the full PC layout: the dock pushed the side columns
+        // together and the top bar texts overlapped (found when capturing the 1200 x 630 link preview image).
+        [SerializeField, Min(0f), Tooltip("Landscape screens narrower than this (logical px) get the 'narrow' layout: " +
+            "two-row dock, no state explanation in the top bar.")]
+        private float narrowWidth = 1440f;
 
         [SerializeField, Min(0f), Tooltip("Mobile devices held sideways with a height below this (logical px) show a " +
             "'rotate your phone' hint over the portrait layout. Tablets stay above it.")]
@@ -205,6 +212,7 @@ namespace WindFarm.UI
             root.EnableInClassList(PortraitClass, portrait);
             root.EnableInClassList(LandscapeClass, !portrait);
             root.EnableInClassList(ShortClass, !portrait && height < shortHeight);
+            root.EnableInClassList(NarrowClass, !portrait && width < narrowWidth);
             root.EnableInClassList(RotateClass, rotateHint);
 
             if (hasLayout && portrait == IsPortrait)
