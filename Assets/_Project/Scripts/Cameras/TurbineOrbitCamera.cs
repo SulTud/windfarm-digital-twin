@@ -92,6 +92,17 @@ namespace WindFarm.Cameras
         [SerializeField, Min(0f), Tooltip("Lowest camera height above the turbine base (m).")]
         private float minCameraHeight = 5f;
 
+        [Header("Drivetrain focus (SHOW on a fault)")]
+        [SerializeField, Range(-180f, 180f), Tooltip("Focus view angle from the rotor front (deg). Past 90 the camera looks " +
+            "at the nacelle side slightly from behind: the generator is in front and the blades stay behind the focus.")]
+        private float focusYawOffset = 105f;
+
+        [SerializeField, Range(-10f, 60f), Tooltip("Focus view elevation (deg).")]
+        private float focusElevation = 12f;
+
+        [SerializeField, Min(1f), Tooltip("Focus view distance from the drivetrain (m).")]
+        private float focusDistance = 40f;
+
         [Header("Idle sway (attract mode)")]
         [SerializeField, Min(1f), Tooltip("Seconds without any touch, click or wheel before the camera starts to sway.")]
         private float idleDelay = 20f;
@@ -132,10 +143,14 @@ namespace WindFarm.Cameras
         private float swayBaseFrontYaw;     // front yaw (wrapped) at that moment, to follow the nacelle afterwards
         private float swayStartElevation;
         private float swayStartZoom;
+        private bool holdingFocus;          // a requested view (drivetrain focus) is kept until the next user input
         private bool initialized;
 
         /// <summary>Current distance from the camera to its pivot (m). Useful for fog and level of detail.</summary>
         public float Distance { get; private set; }
+
+        /// <summary>Current zoom as a multiple of the framing distance (1 = whole turbine fits, smaller = closer).</summary>
+        public float ZoomLevel => zoom;
 
         /// <summary>Farthest distance the camera can reach in the current layout (m).</summary>
         public float MaxDistance => fitDistance * maxZoomOut;
@@ -180,11 +195,27 @@ namespace WindFarm.Cameras
             targetZoom = homeZoom;
         }
 
+        /// <summary>
+        /// Glides to a close view of the drivetrain from the nacelle side (slightly from behind, on the side nearer to
+        /// the camera), for the X-Ray look at a fault. The view is held (no idle sway) until the next user input.
+        /// </summary>
+        public void FocusDrivetrain()
+        {
+            NotifyUserInput();
+            float front = FrontYaw();
+            float side = Mathf.DeltaAngle(front, targetYaw) >= 0f ? 1f : -1f;
+            targetYaw = UnwrapNear(front + side * focusYawOffset, targetYaw);
+            targetElevation = Mathf.Clamp(focusElevation, minElevation, maxElevation);
+            targetZoom = ClampZoom(fitDistance > 0f ? focusDistance / fitDistance : homeZoom);
+            holdingFocus = true;
+        }
+
         /// <summary>Any user input (also on the dashboard) restarts the idle timer and stops the sway where it is.</summary>
         public void NotifyUserInput()
         {
             idleTime = 0f;
             swaying = false;
+            holdingFocus = false;
         }
 
         private void Awake()
@@ -297,6 +328,9 @@ namespace WindFarm.Cameras
 
         private void UpdateIdleSway(float deltaTime)
         {
+            if (holdingFocus)
+                return;
+
             if (!swaying)
             {
                 idleTime += deltaTime;
