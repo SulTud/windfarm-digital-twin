@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Wind turbine icon in the dashboard palette: dark ground, accent blades, light hub. -->
+  <rect width="64" height="64" rx="14" fill="#0D1820"/>
+  <path d="M31 30 L29.6 58 H34.4 L33 30 Z" fill="#8CA2AE"/>
+  <g fill="#5CC6E0">
+    <path d="M32 29 C29.6 22 30.2 12 32 5 C33.8 12 34.4 22 32 29 Z"/>
+    <path d="M32 29 C29.6 22 30.2 12 32 5 C33.8 12 34.4 22 32 29 Z" transform="rotate(120 32 29)"/>
+    <path d="M32 29 C29.6 22 30.2 12 32 5 C33.8 12 34.4 22 32 29 Z" transform="rotate(240 32 29)"/>
+  </g>
+  <circle cx="32" cy="29" r="3.2" fill="#E4EDF1"/>
+</svg>
