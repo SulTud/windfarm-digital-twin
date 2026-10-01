@@ -80,18 +80,9 @@ Assets/_Project/UI                   UXML / USS, fonts
 Assets/WebGLTemplates/WindFarm       WebGL page template
 ```
 
-## Running locally
-
-Requires Unity 6.3 LTS (6000.3.10f1) with WebGL Build Support.
-
-1. Open the project folder in Unity and load `Assets/Scenes/SampleScene.unity`.
-2. Press Play. Use Window > General > Device Simulator to check the phone layout.
-3. For a WebGL build, select the `WindFarm` template (Player Settings > Web > Resolution and Presentation) and build
-   from File > Build Profiles > Web.
-
 ## Tools
 
-Unity 6.3 LTS (URP, UI Toolkit), C#, Blender (turbine model, about 2.3k triangles), HLSL (sky, ground ring,
+Unity 6.3 LTS (6000.3.10f1; URP, UI Toolkit, WebGL), C#, Blender (turbine model, about 2.3k triangles), HLSL (sky, ground ring,
 obstruction light and silhouette shaders). Developed with Claude Code as an AI coding assistant.
 
 ## Author and license
