@@ -36,11 +36,13 @@ namespace WindFarm.UI
         private readonly Button resetButton;
         private readonly Button faultButton;
         private readonly Button faultFab;
+        private readonly Button lightsButton;
 
         private float shownWind = float.NaN;
         private float shownSpeed = float.NaN;
         private int shownXRay = -1;
         private int shownFault = -1;
+        private int shownLights = -1;
 
         public ControlsPresenter(VisualElement root, TurbineDataSimulator simulator, TurbineVisualController visuals,
             TurbineOrbitCamera orbitCamera)
@@ -80,6 +82,10 @@ namespace WindFarm.UI
             faultButton.clicked += ToggleFault;
             faultFab.clicked += ToggleFault;
 
+            // Scene decoration, not a simulator control: all obstruction lights through one global shader value.
+            lightsButton = root.Require<Button>("lights-button");
+            lightsButton.clicked += ToggleLights;
+
             Sync();
         }
 
@@ -93,7 +99,10 @@ namespace WindFarm.UI
             resetButton.clicked -= ResetAll;
             faultButton.clicked -= ToggleFault;
             faultFab.clicked -= ToggleFault;
+            lightsButton.clicked -= ToggleLights;
         }
+
+        private static void ToggleLights() => ObstructionLights.LightsOn = !ObstructionLights.LightsOn;
 
         /// <summary>Called every frame: reflect the simulator state (it may also change from the Inspector).</summary>
         public void Tick()
@@ -168,6 +177,13 @@ namespace WindFarm.UI
                 faultFab.text = fault == 1 ? "REPAIR" : "FAULT";
                 faultButton.EnableInClassList("segmented__item--alert", fault == 1);
                 faultFab.EnableInClassList("fab--alert", fault == 1);
+            }
+
+            int lights = ObstructionLights.LightsOn ? 1 : 0;
+            if (lights != shownLights)
+            {
+                shownLights = lights;
+                lightsButton.EnableInClassList("segmented__item--on", lights == 1);
             }
         }
 

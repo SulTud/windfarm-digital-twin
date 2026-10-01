@@ -477,6 +477,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 5a47e18a9c33a02499b836473ecd6ea2, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1352469945}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 5a47e18a9c33a02499b836473ecd6ea2, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1352469947}
   m_SourcePrefab: {fileID: 100100000, guid: 5a47e18a9c33a02499b836473ecd6ea2, type: 3}
 --- !u!23 &350531013 stripped
 MeshRenderer:
@@ -869,6 +872,11 @@ MeshRenderer:
   m_CorrespondingSourceObject: {fileID: -5853672700611418013, guid: 5a47e18a9c33a02499b836473ecd6ea2, type: 3}
   m_PrefabInstance: {fileID: 350531012}
   m_PrefabAsset: {fileID: 0}
+--- !u!4 &1226773818 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -3973243232858149087, guid: 5a47e18a9c33a02499b836473ecd6ea2, type: 3}
+  m_PrefabInstance: {fileID: 350531012}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1248645717
 GameObject:
   m_ObjectHideFlags: 0
@@ -1102,6 +1110,21 @@ Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 5a47e18a9c33a02499b836473ecd6ea2, type: 3}
   m_PrefabInstance: {fileID: 350531012}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &1352469947
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1352469944}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 49330791e76e89a4ab398bfb2e49b0f0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::WindFarm.Visuals.ObstructionLights
+  nacelle: {fileID: 1226773818}
+  rotor: {fileID: 1598709564}
+  lightMaterial: {fileID: 2100000, guid: aaf498e541dfadd46995a68b45752af6, type: 2}
 --- !u!1 &1365045597
 GameObject:
   m_ObjectHideFlags: 0

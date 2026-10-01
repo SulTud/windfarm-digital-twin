@@ -188,6 +188,11 @@
                 <ui:Label class="card__label" text="HOUSING" />
                 <ui:Button name="xray-button" class="segmented__item segmented__item--single" text="X-RAY" />
             </ui:VisualElement>
+            <!-- Red aviation obstruction lights on / off (all turbines). Moved into the More page on phones. -->
+            <ui:VisualElement name="lights-group" class="dock__group dock__group--lights">
+                <ui:Label class="card__label" text="AVIATION" />
+                <ui:Button name="lights-button" class="segmented__item segmented__item--single" text="LIGHTS" />
+            </ui:VisualElement>
             <!-- Fault scenario: cooling fan failure on / repaired. On phones the FAULT button in the scene does this. -->
             <ui:VisualElement name="fault-group" class="dock__group dock__group--fault">
                 <ui:Label class="card__label" text="SCENARIO" />
@@ -220,6 +225,7 @@
                 <ui:VisualElement name="sheet-page-more" class="sheet__page" picking-mode="Ignore">
                     <ui:VisualElement name="sheet-more-energy" class="sheet-more__section" picking-mode="Ignore" />
                     <ui:VisualElement name="sheet-more-speed" class="sheet-more__section" picking-mode="Ignore" />
+                    <ui:VisualElement name="sheet-more-lights" class="sheet-more__section" picking-mode="Ignore" />
                     <ui:VisualElement class="sheet-more__section sheet-more__section--last" picking-mode="Ignore">
                         <ui:Label class="card__label" text="DATA SOURCE" />
                         <ui:VisualElement name="sheet-more-meta" class="sheet-more__meta" picking-mode="Ignore" />

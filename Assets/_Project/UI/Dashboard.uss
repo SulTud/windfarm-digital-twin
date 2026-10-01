@@ -780,7 +780,7 @@
 
 .dock {
     align-self: center;
-    width: 820px;
+    width: 900px;
     max-width: 100%;
     flex-direction: row;
     align-items: flex-start;
@@ -798,6 +798,7 @@
 
 .dock__group--speed,
 .dock__group--xray,
+.dock__group--lights,
 .dock__group--fault {
     margin-right: 20px;
 }
@@ -958,7 +959,8 @@
     flex-grow: 0;
 }
 
-.sheet .dock__group--speed {
+.sheet .dock__group--speed,
+.sheet .dock__group--lights {
     margin-right: 0;
 }
 

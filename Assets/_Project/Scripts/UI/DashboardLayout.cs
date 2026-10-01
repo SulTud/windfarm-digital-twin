@@ -44,12 +44,14 @@ namespace WindFarm.UI
         private VisualElement dock;
         private VisualElement speedGroup;
         private VisualElement xRayGroup;
+        private VisualElement lightsGroup;
         private VisualElement sheet;
         private VisualElement sheetContent;
         private VisualElement trendsPage;
         private VisualElement curvePage;
         private VisualElement moreEnergy;
         private VisualElement moreSpeed;
+        private VisualElement moreLights;
         private VisualElement moreMeta;
         private VisualElement sheetSafeArea;
 
@@ -111,18 +113,20 @@ namespace WindFarm.UI
             dock = root.Require<VisualElement>("dock");
             speedGroup = root.Require<VisualElement>("sim-speed-group");
             xRayGroup = root.Require<VisualElement>("xray-group");
+            lightsGroup = root.Require<VisualElement>("lights-group");
             sheet = root.Require<VisualElement>("sheet");
             sheetContent = root.Require<VisualElement>("sheet-content");
             trendsPage = root.Require<VisualElement>("sheet-page-trends");
             curvePage = root.Require<VisualElement>("sheet-page-curve");
             moreEnergy = root.Require<VisualElement>("sheet-more-energy");
             moreSpeed = root.Require<VisualElement>("sheet-more-speed");
+            moreLights = root.Require<VisualElement>("sheet-more-lights");
             moreMeta = root.Require<VisualElement>("sheet-more-meta");
             sheetSafeArea = root.Require<VisualElement>("sheet-safe-area");
 
             return AllFound(dashboard, topBar, statusGroup, stateExplanation, meta, leftColumn, energyCard, sceneSpace,
-                rightColumn, trendCard, curveCard, dock, speedGroup, xRayGroup, sheet, sheetContent, trendsPage, curvePage,
-                moreEnergy, moreSpeed, moreMeta, sheetSafeArea);
+                rightColumn, trendCard, curveCard, dock, speedGroup, xRayGroup, lightsGroup, sheet, sheetContent, trendsPage,
+                curvePage, moreEnergy, moreSpeed, moreLights, moreMeta, sheetSafeArea);
         }
 
         private static bool AllFound(params VisualElement[] elements)
@@ -140,6 +144,7 @@ namespace WindFarm.UI
             // Detach everything that moves first, so the insert positions below are not shifted by the old places.
             dock.RemoveFromHierarchy();
             speedGroup.RemoveFromHierarchy();
+            lightsGroup.RemoveFromHierarchy();
             stateExplanation.RemoveFromHierarchy();
             meta.RemoveFromHierarchy();
             energyCard.RemoveFromHierarchy();
@@ -154,6 +159,7 @@ namespace WindFarm.UI
                 curvePage.Add(curveCard);
                 moreEnergy.Add(energyCard);
                 moreSpeed.Add(speedGroup);
+                moreLights.Add(lightsGroup);
                 moreMeta.Add(meta);
             }
             else
@@ -163,6 +169,7 @@ namespace WindFarm.UI
 
                 sceneSpace.Add(dock);
                 dock.Insert(dock.IndexOf(xRayGroup), speedGroup);
+                dock.Insert(dock.IndexOf(xRayGroup) + 1, lightsGroup);
                 statusGroup.Add(stateExplanation);
                 topBar.Add(meta);
                 leftColumn.Add(energyCard);
