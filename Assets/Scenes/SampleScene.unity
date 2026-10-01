@@ -155,6 +155,7 @@ MonoBehaviour:
   scaleMultiplier: 1
   minLandscapeWidth: 720
   shortHeight: 560
+  narrowWidth: 1440
   rotateHintMaxHeight: 600
 --- !u!114 &116683435
 MonoBehaviour:
@@ -223,6 +224,9 @@ MonoBehaviour:
   orbitCamera: {fileID: 330585548}
   turbineClass: V112-class
   hubHeight: 94
+  githubUrl: https://github.com/SulTud/windfarm-digital-twin
+  linkedInUrl: https://www.linkedin.com/in/s%C3%BCleyman-nizamo%C4%9Flu-98531123b/
+  email: suleyman.captain@gmail.com
 --- !u!114 &116683439
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -230,7 +234,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 116683433}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 941cdb232ac40a043aea186c9f0c5631, type: 3}
   m_Name: 
