@@ -65,3 +65,6 @@ Desktop.ini
 
 # Local AI assistant settings
 .claude/settings.local.json
+
+# Local AI assistant notes (kept out of the public repo)
+CLAUDE.md
