@@ -38,6 +38,16 @@ namespace WindFarm.UI
         [SerializeField, Min(0f), Tooltip("Hub height shown in the top bar (m).")]
         private float hubHeight = 94f;
 
+        [Header("About / credits")]
+        [SerializeField, Tooltip("Source code repository (About panel). Empty disables the button.")]
+        private string githubUrl = "https://github.com/SulTud/windfarm-digital-twin";
+
+        [SerializeField, Tooltip("LinkedIn profile (About panel). Empty disables the button.")]
+        private string linkedInUrl = "https://www.linkedin.com/in/s%C3%BCleyman-nizamo%C4%9Flu-98531123b/";
+
+        [SerializeField, Tooltip("Contact e-mail (About panel), shown as text too. Empty disables the button.")]
+        private string email = "suleyman.captain@gmail.com";
+
         // Feeds the trend chart (the power curve keeps its own trail of the smoothed live point). Min 0.5 s of
         // simulation time apart, so a 5 min window holds ~600 samples at any simulation speed.
         private readonly TelemetryHistory history = new TelemetryHistory(1024, 0.5);
@@ -51,6 +61,11 @@ namespace WindFarm.UI
         private ControlsPresenter controls;
         private SceneViewPresenter sceneView;
         private SceneCalloutsPresenter callouts;
+        private AboutPresenter about;
+        private HintPresenter hint;
+
+        // Shared by the energy card and the fault banner; fed before them on every sample.
+        private LostProductionMeter lostProduction;
 
         private void OnEnable()
         {
@@ -72,14 +87,18 @@ namespace WindFarm.UI
             string classText = string.Format(CultureInfo.InvariantCulture, "{0} · {1:0.0} MW · hub {2:0} m",
                 turbineClass, specs.RatedPowerMW, hubHeight);
             statusBar = new StatusBarPresenter(root, specs, classText);
-            valueCards = new ValueCardsPresenter(root, specs);
+            lostProduction = new LostProductionMeter(specs);
+            valueCards = new ValueCardsPresenter(root, specs, lostProduction);
             if (orbitCamera != null)
             {
                 sceneView = new SceneViewPresenter(root, orbitCamera);
                 callouts = new SceneCalloutsPresenter(root, specs, orbitCamera, turbineVisuals);
             }
 
-            alerts = new AlertsPresenter(root, specs, callouts != null && callouts.CanShowFault ? callouts.FocusFault : null);
+            alerts = new AlertsPresenter(root, specs, lostProduction,
+                callouts != null && callouts.CanShowFault ? callouts.FocusFault : null);
+            about = new AboutPresenter(root, githubUrl, linkedInUrl, email);
+            hint = new HintPresenter(root);
             trendChart = new TrendChartPresenter(root, specs, history);
             powerCurve = new PowerCurvePresenter(root, specs);
             controls = new ControlsPresenter(root, simulator, turbineVisuals, orbitCamera);
@@ -114,6 +133,11 @@ namespace WindFarm.UI
             sceneView = null;
             callouts?.Dispose();
             callouts = null;
+            about?.Dispose();
+            about = null;
+            hint?.Dispose();
+            hint = null;
+            lostProduction = null;
         }
 
         private void LateUpdate()
@@ -131,11 +155,14 @@ namespace WindFarm.UI
             powerCurve?.Tick(deltaTime);
             controls?.Tick();
             sceneView?.Tick();
+            hint?.Tick(deltaTime);
+            about?.Tick(deltaTime);
         }
 
         private void HandleTelemetry(TurbineTelemetry telemetry)
         {
             history.Add(telemetry);
+            lostProduction.Add(telemetry);
             statusBar.Show(telemetry, simulator.SimulationSpeed);
             valueCards.Show(telemetry);
             alerts.Show(telemetry);

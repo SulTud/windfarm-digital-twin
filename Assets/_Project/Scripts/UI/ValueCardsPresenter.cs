@@ -10,7 +10,7 @@ namespace WindFarm.UI
     ///
     /// Fault consequences: while derated, the power card footer shows the limit instead of the rated power; once a
     /// fault event has happened, the energy card shows the production it cost (<see cref="LostProductionMeter"/>,
-    /// computed from telemetry only, so it works for a real source too).
+    /// owned and fed by DashboardController, computed from telemetry only, so it works for a real source too).
     ///
     /// Telemetry arrives at 5 Hz with sensor noise; every value glides toward the latest sample each frame with
     /// exponential smoothing (the same approach as the 3D turbine), so numbers roll instead of jumping.
@@ -57,9 +57,11 @@ namespace WindFarm.UI
         private int shownLost = -1;          // kWh
         private int shownLostState = -1;     // 0 hidden, 1 last event, 2 event active
 
-        public ValueCardsPresenter(VisualElement root, TurbineSpecs specs)
+        /// <param name="lostProduction">Fed by DashboardController (shared with the fault banner).</param>
+        public ValueCardsPresenter(VisualElement root, TurbineSpecs specs, LostProductionMeter lostProduction)
         {
             this.specs = specs;
+            this.lostProduction = lostProduction;
 
             power = new NumberLabel(root.Require<Label>("power-value"), "0.00", 2);
             powerPercent = root.Require<Label>("power-percent");
@@ -73,7 +75,6 @@ namespace WindFarm.UI
             powerRated = root.Require<Label>("power-rated");
             lostRow = root.Require<VisualElement>("lost-row");
             lostValue = root.Require<Label>("lost-value");
-            lostProduction = new LostProductionMeter(specs);
 
             ShowPowerLimit(specs.RatedPowerMW);
             root.Require<Label>("rotor-range").text =
@@ -86,7 +87,6 @@ namespace WindFarm.UI
             // A stopped turbine has no limit worth showing (the protection's value keeps moving while it cools).
             bool producing = telemetry.State == TurbineOperatingState.Producing || telemetry.State == TurbineOperatingState.RatedPower;
             ShowPowerLimit(producing ? telemetry.PowerLimitMW : specs.RatedPowerMW);
-            lostProduction.Add(telemetry);
             ShowLostProduction();
             if (hasTelemetry)
                 return;

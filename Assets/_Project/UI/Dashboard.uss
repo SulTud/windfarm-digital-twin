@@ -257,6 +257,223 @@
     border-radius: 4px;
 }
 
+/* Signature next to the source badge (moves to the More page with it on phones); a tap opens About. */
+.credit-line {
+    -unity-font-definition: url("Fonts/Barlow-Regular SDF.asset");
+    font-size: 12px;
+    color: var(--muted);
+    margin-left: 14px;
+}
+
+.credit-line:hover {
+    color: var(--ink);
+}
+
+.dashboard .about-button {
+    width: 28px;
+    height: 28px;
+    margin: 0 0 0 14px;
+    padding: 0;
+    border-width: 1px;
+    border-color: var(--line-strong);
+    border-radius: 14px;
+    background-color: rgba(0, 0, 0, 0);
+    -unity-font-definition: url("Fonts/BarlowCondensed-Bold SDF.asset");
+    font-size: 15px;
+    -unity-text-align: middle-center;
+    color: var(--ink-2);
+}
+
+.dashboard .about-button:hover {
+    background-color: var(--hover);
+    color: var(--ink);
+}
+
+/* ---------- First-visit hint (HintPresenter) ---------- */
+
+/*
+ * Two quiet lines, no box (a boxed strip in the middle covered the turbine and read as a warning): the gestures in
+ * muted text, the action in the accent color, placed next to the button it names. PC: centered just above the dock.
+ */
+.hint {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 104px;
+    align-items: center;
+    opacity: 0;
+    transition-property: opacity;
+    transition-duration: 0.6s;
+}
+
+.hint--visible {
+    opacity: 1;
+}
+
+.hint__gesture,
+.hint__action {
+    -unity-font-definition: url("Fonts/Barlow-Regular SDF.asset");
+    font-size: 13px;
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.85);
+}
+
+/* Equal weight: an accented fault line invited a press at the default wind, where a fan fault takes minutes to show. */
+.hint__gesture,
+.hint__action {
+    color: var(--ink-2);
+    -unity-text-align: middle-center;
+}
+
+.hint__action {
+    margin-top: 2px;
+}
+
+/* Phone: centered on the screen, level with the FAULT button; equal side margins keep it clear of the button column. */
+.dashboard--portrait .hint {
+    left: 70px;
+    right: 70px;
+    bottom: 74px;
+}
+
+/* ---------- About panel (AboutPresenter); outside #dashboard: sets its own fonts ---------- */
+
+.about {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    background-color: rgba(5, 10, 14, 0.72);
+}
+
+.about--open {
+    display: flex;
+}
+
+.about__card {
+    width: 520px;
+    max-width: 100%;
+    padding: 18px 20px 20px 20px;
+    background-color: var(--panel-solid);
+    border-width: 1px;
+    border-color: var(--line-strong);
+    border-radius: 14px;
+}
+
+.about__header {
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 6px;
+}
+
+.about__title {
+    flex-shrink: 1;
+    -unity-font-definition: url("Fonts/BarlowCondensed-SemiBold SDF.asset");
+    font-size: 20px;
+    letter-spacing: 0.3px;
+    white-space: normal;
+    color: var(--ink);
+}
+
+.about .about__close {
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
+    margin: -4px -6px 0 12px;
+    padding: 0;
+    border-width: 0;
+    border-radius: 16px;
+    background-color: rgba(0, 0, 0, 0);
+}
+
+.about .about__close:hover {
+    background-color: var(--hover);
+}
+
+/* 14 x 2 px bars centered in the 32 px button ((32 - 14) / 2, (32 - 2) / 2), rotated around their own center. */
+.about__close-bar {
+    position: absolute;
+    left: 9px;
+    top: 15px;
+    width: 14px;
+    height: 2px;
+    border-radius: 1px;
+    background-color: var(--muted);
+}
+
+.about__close-bar--a {
+    rotate: 45deg;
+}
+
+.about__close-bar--b {
+    rotate: -45deg;
+}
+
+.about .about__close:hover .about__close-bar {
+    background-color: var(--ink);
+}
+
+.about__text {
+    margin-top: 8px;
+    -unity-font-definition: url("Fonts/Barlow-Regular SDF.asset");
+    font-size: 14px;
+    white-space: normal;
+    color: var(--ink-2);
+}
+
+.about__text--muted {
+    font-size: 13px;
+    color: var(--muted);
+}
+
+.about__credits {
+    margin-top: 16px;
+    padding-top: 14px;
+    border-top-width: 1px;
+    border-color: var(--line);
+}
+
+.about__name {
+    -unity-font-definition: url("Fonts/BarlowCondensed-SemiBold SDF.asset");
+    font-size: 18px;
+    color: var(--ink);
+}
+
+.about__links {
+    flex-direction: row;
+    flex-wrap: wrap;
+    margin-top: 8px;
+}
+
+.about .about__link {
+    margin: 0 8px 8px 0;
+    padding: 7px 14px;
+    -unity-font-definition: url("Fonts/IBMPlexMono-Medium SDF.asset");
+    font-size: 13px;
+    letter-spacing: 1px;
+    color: var(--accent);
+    background-color: var(--accent-dim);
+    border-width: 1px;
+    border-color: rgba(92, 198, 224, 0.5);
+    border-radius: 6px;
+}
+
+.about .about__link:hover {
+    background-color: var(--hover);
+    color: var(--ink);
+}
+
+.about__email {
+    -unity-font-definition: url("Fonts/IBMPlexMono-Regular SDF.asset");
+    font-size: 12px;
+    color: var(--muted);
+}
+
 /* ---------- State pill and chip (semantic colors) ---------- */
 
 /*
@@ -975,10 +1192,20 @@
     margin-top: 6px;
 }
 
+/* A definite width, or the wrapped second line (the signature) is not counted in the height and overlaps the note. */
 .sheet .top-bar__meta {
     justify-content: flex-start;
     flex-grow: 0;
     flex-basis: auto;
+    flex-wrap: wrap;
+    width: 100%;
+}
+
+/* On a narrow phone the signature wraps under the clock and the badge. */
+.sheet .credit-line {
+    margin-left: 0;
+    margin-top: 6px;
+    width: 100%;
 }
 
 .sheet-more__note {

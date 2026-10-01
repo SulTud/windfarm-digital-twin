@@ -35,6 +35,7 @@ namespace WindFarm.UI
         private VisualElement statusGroup;
         private VisualElement stateExplanation;
         private VisualElement meta;
+        private VisualElement aboutButton;
         private VisualElement leftColumn;
         private VisualElement energyCard;
         private VisualElement sceneSpace;
@@ -104,6 +105,7 @@ namespace WindFarm.UI
             statusGroup = root.Require<VisualElement>("top-bar-status");
             stateExplanation = root.Require<VisualElement>("state-explanation");
             meta = root.Require<VisualElement>("top-bar-meta");
+            aboutButton = root.Require<VisualElement>("about-button");
             leftColumn = root.Require<VisualElement>("left-column");
             energyCard = root.Require<VisualElement>("energy-card");
             sceneSpace = root.Require<VisualElement>("scene-space");
@@ -124,7 +126,7 @@ namespace WindFarm.UI
             moreMeta = root.Require<VisualElement>("sheet-more-meta");
             sheetSafeArea = root.Require<VisualElement>("sheet-safe-area");
 
-            return AllFound(dashboard, topBar, statusGroup, stateExplanation, meta, leftColumn, energyCard, sceneSpace,
+            return AllFound(dashboard, topBar, statusGroup, stateExplanation, meta, aboutButton, leftColumn, energyCard, sceneSpace,
                 rightColumn, trendCard, curveCard, dock, speedGroup, xRayGroup, lightsGroup, sheet, sheetContent, trendsPage,
                 curvePage, moreEnergy, moreSpeed, moreLights, moreMeta, sheetSafeArea);
         }
@@ -171,7 +173,8 @@ namespace WindFarm.UI
                 dock.Insert(dock.IndexOf(xRayGroup), speedGroup);
                 dock.Insert(dock.IndexOf(xRayGroup) + 1, lightsGroup);
                 statusGroup.Add(stateExplanation);
-                topBar.Add(meta);
+                // Before the About button, which stays at the right end of the top bar in both layouts.
+                topBar.Insert(topBar.IndexOf(aboutButton), meta);
                 leftColumn.Add(energyCard);
                 rightColumn.Add(trendCard);
                 rightColumn.Add(curveCard);

@@ -43,6 +43,7 @@ namespace WindFarm.UI
         private readonly Label notificationMessage;
         private readonly Button notificationAction;
         private readonly System.Action showGenerator;
+        private readonly LostProductionMeter lostProduction;
         private readonly VisualElement zoneNormal;
         private readonly VisualElement zoneWarning;
         private readonly VisualElement zoneAlarm;
@@ -64,12 +65,16 @@ namespace WindFarm.UI
         private string shownBannerKey;
         private int shownBannerTemperature = int.MinValue;
         private int shownBannerLimit = int.MinValue;
+        private int shownBannerLost = int.MinValue;
 
+        /// <param name="lostProduction">Fed by DashboardController; its running total goes into the derate and trip banners.</param>
         /// <param name="showGenerator">SHOW action on generator banners (X-Ray + camera to the drivetrain); null hides the button.</param>
-        public AlertsPresenter(VisualElement root, TurbineSpecs specs, System.Action showGenerator)
+        public AlertsPresenter(VisualElement root, TurbineSpecs specs, LostProductionMeter lostProduction,
+            System.Action showGenerator)
         {
             this.root = root;
             this.specs = specs;
+            this.lostProduction = lostProduction;
             this.showGenerator = showGenerator;
 
             notificationAction = root.Require<Button>("notification-action");
@@ -278,12 +283,26 @@ namespace WindFarm.UI
             // Every banner except the storm is about the generator: offer the close look at it.
             SetActionVisible(showGenerator != null && key != "storm");
 
-            if (key == shownBannerKey && temperature == shownBannerTemperature && limitTenths == shownBannerLimit)
+            // The cost where the viewer is looking (the energy card may be hidden on short screens or in the phone
+            // sheet): derate and trip banners end with the production lost so far.
+            int lostKilowattHours = int.MinValue;
+            bool costly = level == GeneratorTemperatureLevel.Trip || level == GeneratorTemperatureLevel.Alarm;
+            if (costly && lostProduction != null && lostProduction.EventActive)
+            {
+                lostKilowattHours = Mathf.RoundToInt((float)(lostProduction.LostEnergyMWh * 1000.0));
+                message += lostKilowattHours < 1000
+                    ? UiFormat.Format(" Lost so far: {0} kWh.", lostKilowattHours)
+                    : UiFormat.Format(" Lost so far: {0:0.00} MWh.", lostKilowattHours / 1000f);
+            }
+
+            if (key == shownBannerKey && temperature == shownBannerTemperature && limitTenths == shownBannerLimit &&
+                lostKilowattHours == shownBannerLost)
                 return;
 
             shownBannerKey = key;
             shownBannerTemperature = temperature;
             shownBannerLimit = limitTenths;
+            shownBannerLost = lostKilowattHours;
             notificationTitle.text = title;
             notificationMessage.text = message;
             notification.EnableInClassList(NotificationClasses[0], !critical);

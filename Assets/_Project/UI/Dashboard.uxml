@@ -22,9 +22,12 @@
                 </ui:VisualElement>
                 <ui:Label name="state-explanation" class="state-explanation" picking-mode="Ignore" text="Wind above cut-in, below rated. Rotor follows the wind." />
             </ui:VisualElement>
+            <!-- About (i): stays at the right end of the top bar on phones too; DashboardLayout puts the meta group before it on PC. -->
+            <ui:Button name="about-button" class="about-button" text="i" />
             <ui:VisualElement name="top-bar-meta" class="top-bar__meta" picking-mode="Ignore">
                 <ui:Label name="sim-clock" class="meta-text" text="SIM 1× · 00:00:00" />
                 <ui:Label name="data-source" class="source-badge" text="Source: Mock SCADA" />
+                <ui:Label name="credit-line" class="credit-line" text="by S&#252;leyman Nizamo&#287;lu" />
             </ui:VisualElement>
         </ui:VisualElement>
 
@@ -128,6 +131,11 @@
                         <!-- Generator events: X-Ray on and the camera glides to the drivetrain. Hidden otherwise. -->
                         <ui:Button name="notification-action" class="notification__action" text="SHOW" />
                     </ui:VisualElement>
+                </ui:VisualElement>
+                <!-- First-visit hint (HintPresenter): camera gestures and the fault button, next to that button. -->
+                <ui:VisualElement name="hint" class="hint" picking-mode="Ignore">
+                    <ui:Label name="hint-gesture" class="hint__gesture" picking-mode="Ignore" text="Drag to orbit · Scroll to zoom" />
+                    <ui:Label name="hint-action" class="hint__action" picking-mode="Ignore" text="Raise the wind, then try FAN FAILURE" />
                 </ui:VisualElement>
                 <ui:VisualElement name="scene-actions" class="scene-actions" picking-mode="Ignore">
                     <ui:Button name="fault-fab" class="fab fab--fault" text="FAULT" />
@@ -234,6 +242,36 @@
                 </ui:VisualElement>
             </ui:VisualElement>
             <ui:VisualElement name="sheet-safe-area" class="sheet__safe-area" picking-mode="Ignore" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+
+    <!--
+        About panel (AboutPresenter): over the whole dashboard incl. the phone sheet. Outside #dashboard, so its
+        styles do not inherit the dashboard fonts. The name is written with character references (files stay ASCII).
+    -->
+    <ui:VisualElement name="about" class="about">
+        <ui:VisualElement name="about-card" class="about__card">
+            <ui:VisualElement class="about__header">
+                <ui:Label class="about__title" text="WTG-01 · Wind turbine digital twin" />
+                <!-- The X is two rotated bars, not a glyph: the font draws "×" off center. -->
+                <ui:Button name="about-close" class="about__close" text="">
+                    <ui:VisualElement class="about__close-bar about__close-bar--a" picking-mode="Ignore" />
+                    <ui:VisualElement class="about__close-bar about__close-bar--b" picking-mode="Ignore" />
+                </ui:Button>
+            </ui:VisualElement>
+            <ui:Label class="about__text" text="A live 3 MW wind turbine driven by a physics-based simulator: turbulent wind, rotor torque balance, blade pitch and generator torque control after the NREL 5-MW reference turbine, and a generator heat balance. Telemetry streams into this dashboard at 5 Hz, like a SCADA feed." />
+            <ui:Label class="about__text" text="The data source sits behind a single interface: a real SCADA or MQTT feed can replace the simulator without changing the dashboard." />
+            <ui:Label class="about__text" text="Try a fault: raise the wind above rated (about 11 m/s), then FAN FAILURE stops the generator cooling fan. Watch the protection warn, derate and trip, and see the production it costs." />
+            <ui:Label class="about__text about__text--muted" text="Built with Unity 6 (URP, WebGL) and UI Toolkit." />
+            <ui:VisualElement class="about__credits">
+                <ui:Label class="about__name" text="S&#252;leyman Nizamo&#287;lu" />
+                <ui:VisualElement class="about__links">
+                    <ui:Button name="about-github" class="about__link" text="GITHUB" />
+                    <ui:Button name="about-linkedin" class="about__link" text="LINKEDIN" />
+                    <ui:Button name="about-email" class="about__link" text="E-MAIL" />
+                </ui:VisualElement>
+                <ui:Label name="about-email-address" class="about__email" text="" />
+            </ui:VisualElement>
         </ui:VisualElement>
     </ui:VisualElement>
 
