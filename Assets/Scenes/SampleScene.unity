@@ -389,7 +389,7 @@ MonoBehaviour:
   rotor: {fileID: 1598709564}
   fieldOfView: 40
   framingMargin: 0.08
-  farClipMargin: 1500
+  farClipMargin: 3500
   homeYawOffset: 20
   homeZoom: 0.8
   homeElevation: -4
@@ -679,6 +679,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 2122603922}
+  - {fileID: 1681592823}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!23 &455689774 stripped
@@ -1181,6 +1182,62 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 2244661954278464365, guid: 5a47e18a9c33a02499b836473ecd6ea2, type: 3}
   m_PrefabInstance: {fileID: 350531012}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &1681592822
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1681592823}
+  - component: {fileID: 1681592824}
+  m_Layer: 0
+  m_Name: WindFarmBackdrop
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1681592823
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1681592822}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 450809643}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1681592824
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1681592822}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d89efc493de80424bb7194e34b2313e0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::WindFarm.Visuals.WindFarmBackdrop
+  turbineModel: {fileID: 919132149155446097, guid: 5a47e18a9c33a02499b836473ecd6ea2, type: 3}
+  mainTurbine: {fileID: 1352469946}
+  mainRotor: {fileID: 1598709564}
+  silhouetteMaterial: {fileID: 2100000, guid: 12f2a1d6222c9764ebc8681bfe089753, type: 2}
+  count: 3
+  distance: 2200
+  spacing: 1300
+  scatter: 0.3
+  sideOffset: 0
+  rotorRpm: 11
+  speedVariation: 0.08
+  seed: 1
 --- !u!4 &1858947449 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -7047631003763905507, guid: 5a47e18a9c33a02499b836473ecd6ea2, type: 3}

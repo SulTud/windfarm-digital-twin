@@ -43,8 +43,9 @@ namespace WindFarm.Cameras
         [SerializeField, Range(0f, 0.4f), Tooltip("Free border around the turbine, as a fraction of the free screen area's half size.")]
         private float framingMargin = 0.08f;
 
-        [SerializeField, Min(0f), Tooltip("Far clip plane distance beyond the pivot (m). Room for the sky, ground and distant turbines.")]
-        private float farClipMargin = 1500f;
+        [SerializeField, Min(0f), Tooltip("Far clip plane distance beyond the pivot (m). Room for the sky, ground and the " +
+            "horizon silhouettes (WindFarmBackdrop, up to ~2.9 km behind the turbine).")]
+        private float farClipMargin = 3500f;
 
         [Header("Orbit")]
         [SerializeField, Range(-180f, 180f), Tooltip("Home view: angle around the turbine from straight in front of the " +
