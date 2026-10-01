@@ -15,7 +15,7 @@ RenderSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 10
   m_Fog: 1
-  m_FogColor: {r: 0.235, g: 0.353, b: 0.42, a: 1}
+  m_FogColor: {r: 0.30574614, g: 0.41717586, b: 0.47444487, a: 1}
   m_FogMode: 1
   m_FogDensity: 0.01
   m_LinearFogStart: 450
@@ -403,6 +403,9 @@ MonoBehaviour:
   bladePlaneClearance: 5
   bladeTipClearance: 10
   minCameraHeight: 5
+  focusYawOffset: 105
+  focusElevation: 12
+  focusDistance: 40
   idleDelay: 20
   swayAmplitude: 35
   swayPeriod: 60
@@ -642,7 +645,7 @@ MonoBehaviour:
   orbitCamera: {fileID: 330585548}
   zenithColor: {r: 0.106, g: 0.204, b: 0.275, a: 1}
   horizonColor: {r: 0.235, g: 0.353, b: 0.42, a: 1}
-  gradientExponent: 0.6
+  gradientHeight: 0.35
   horizonGlowColor: {r: 0.361, g: 0.471, b: 0.522, a: 1}
   horizonGlowWidth: 0.08
   horizonGlowStrength: 0.5
@@ -668,10 +671,11 @@ Transform:
   m_GameObject: {fileID: 450809641}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -17.54487, y: -0.00001, z: -192.58711}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children: []
+  m_Children:
+  - {fileID: 2122603922}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!23 &455689774 stripped
@@ -818,9 +822,12 @@ MonoBehaviour:
     <FrictionTemperatureRise>k__BackingField: 8
     <LoadTemperatureRise>k__BackingField: 95
     <ThermalTimeConstant>k__BackingField: 90
+    <NaturalCoolingFraction>k__BackingField: 0.2
     <GeneratorWarningTemperature>k__BackingField: 140
     <GeneratorAlarmTemperature>k__BackingField: 150
     <GeneratorTripTemperature>k__BackingField: 155
+    <DeratedPowerFraction>k__BackingField: 0.5
+    <GeneratorRestartTemperature>k__BackingField: 130
     <AirDensity>k__BackingField: 1.225
   windConditions:
     <MeanWindSpeed>k__BackingField: 9
@@ -1166,6 +1173,115 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 2861116016573080681, guid: 5a47e18a9c33a02499b836473ecd6ea2, type: 3}
   m_PrefabInstance: {fileID: 350531012}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &2122603921
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2122603922}
+  - component: {fileID: 2122603924}
+  - component: {fileID: 2122603923}
+  - component: {fileID: 2122603925}
+  m_Layer: 0
+  m_Name: GroundRing
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2122603922
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2122603921}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0.7071068, y: 0, z: 0, w: 0.7071068}
+  m_LocalPosition: {x: 0, y: 0.05, z: 0}
+  m_LocalScale: {x: 200, y: 200, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 450809643}
+  m_LocalEulerAnglesHint: {x: 90, y: 0, z: 0}
+--- !u!23 &2122603923
+MeshRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2122603921}
+  m_Enabled: 1
+  m_CastShadows: 0
+  m_ReceiveShadows: 1
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 2
+  m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 2100000, guid: a79c6f73e12ae8846a87c4e408f5e678, type: 2}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 3
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+  m_MaskInteraction: 0
+  m_AdditionalVertexStreams: {fileID: 0}
+--- !u!33 &2122603924
+MeshFilter:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2122603921}
+  m_Mesh: {fileID: 10210, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!114 &2122603925
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2122603921}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d83ee2b2f97c6ac409e9f559e360b340, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::WindFarm.Visuals.GroundRingIndicator
+  simulator: {fileID: 1145990849}
+  producingColor: {r: 0.36, g: 0.78, b: 0.88, a: 1}
+  cautionColor: {r: 0.94, g: 0.69, b: 0.24, a: 1}
+  faultColor: {r: 0.94, g: 0.35, b: 0.29, a: 1}
+  idleColor: {r: 0.3, g: 0.36, b: 0.4, a: 1}
+  transitionTime: 0.6
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
