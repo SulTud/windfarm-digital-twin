@@ -46,9 +46,21 @@ Causal chain per 0.05 s step:
   runs.
 - **Measurement:** sensor noise is applied to the published readings only, never to the physics state.
 
-Verification (console harness running the same model code): steady state matches the computed power curve within
-0.001 MW (8 m/s -> 10.23 rpm / 1.31 MW); under turbulence about half of the points lie above the curve, mean
-deviation within ±0.05 MW; a 12 -> 20 m/s gust at rated gives 12.4 % rotor overspeed, recovered in about 15 s.
+### Verification
+
+43 EditMode tests (`Assets/_Project/Tests/Editor`, Unity Test Runner) drive the same model code with constant or
+seeded turbulent wind:
+
+| Area | Checked |
+|---|---|
+| Steady state | Power settles on the computed power curve at 5-24 m/s within 0.005 MW (8 m/s -> 10.23 rpm / 1.31 MW); pitch 4.5 / 11.6 / 19.4 / 23.8° at 12 / 15 / 20 / 24 m/s; rated wind about 10.6 m/s; ~118 °C at rated without alarms |
+| Dynamics | 12 -> 20 m/s gust at rated: overspeed < 15 % (12.4 % measured), back to rated within 30 s; high-wind start-up < 2 % overspeed; a lull is bridged by rotor kinetic energy; under turbulence (TI 0.12) points scatter on both sides of the curve, mean deviation within ±0.05 MW |
+| Supervisory control | Cut-in confirmation, low-wind disconnect within seconds, storm shutdown and feathering, gust trip, restart only below the restart wind speed after the minimum stop |
+| Protection | Fan fault reported at once, warning hysteresis, linear derating curve, trip latched until cooled and repaired |
+| Fault scenario | Warning -> derate -> trip in order, power held under the limit; no restart while the fan is dead; restart and rated power after repair; lost production meter within 5 % of a healthy twin on the same wind |
+
+The protection tests were checked against deliberately broken models (latch ignoring the fan, derating removed):
+each fault is caught by a unit test and by a scenario test.
 
 ### Scope and limitations
 
@@ -76,6 +88,7 @@ Assets/_Project/Scripts/Simulation   models, controller, protection, telemetry c
 Assets/_Project/Scripts/UI           dashboard presenters, charts, gestures, responsive layout
 Assets/_Project/Scripts/Visuals      turbine animation, environment, status ring, obstruction lights
 Assets/_Project/Scripts/Cameras      orbit camera and viewport framing
+Assets/_Project/Tests/Editor         EditMode tests of the simulation models
 Assets/_Project/UI                   UXML / USS, fonts
 Assets/WebGLTemplates/WindFarm       WebGL page template
 ```
